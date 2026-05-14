@@ -1,0 +1,65 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model eventos {
+  id_evento           Int          @id @default(autoincrement())
+  titulo              String       @db.VarChar(150)
+  data_inicio         DateTime     @default(now()) @db.Date
+  data_fim            DateTime     @db.Date
+  hora_inicio         DateTime     @db.Time(6)
+  hora_fim            DateTime     @db.Time(6)
+  objetivo_pedagogico String?
+  id_local            String?      @db.VarChar(5)
+  id_usuario          Int?
+  usuarios            usuarios?    @relation(fields: [id_usuario], references: [id_usuario], onDelete: NoAction, onUpdate: NoAction, map: "fk_eventos_coordenador")
+  local               local?       @relation(fields: [id_local], references: [id_local], onDelete: NoAction, onUpdate: NoAction, map: "fk_eventos_local")
+  inscricoes          inscricoes[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model inscricoes {
+  id_inscricao     Int       @id @default(autoincrement())
+  id_aluno         Int?
+  id_evento        Int?
+  presenca_entrada Boolean?  @default(false)
+  presenca_saida   Boolean?  @default(false)
+  codigo_validacao String?   @db.VarChar(10)
+  data_inscricao   DateTime? @default(now()) @db.Timestamp(6)
+  usuarios         usuarios? @relation(fields: [id_aluno], references: [id_usuario], onDelete: NoAction, onUpdate: NoAction, map: "fk_inscricoes_aluno")
+  eventos          eventos?  @relation(fields: [id_evento], references: [id_evento], onDelete: NoAction, onUpdate: NoAction, map: "fk_inscricoes_evento")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model local {
+  id_local   String    @id @db.VarChar(5)
+  nome_local String    @db.VarChar(100)
+  capacidade Int?      @default(0)
+  eventos    eventos[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model tipo_perfil {
+  id_tipo_perfil String     @id @db.VarChar(5)
+  descricao      String     @db.VarChar(50)
+  usuarios       usuarios[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model usuarios {
+  id_usuario     Int          @id @default(autoincrement())
+  nome           String       @db.VarChar(100)
+  email          String       @unique @db.VarChar(100)
+  senha          String       @db.VarChar(255)
+  id_tipo_perfil String?      @db.VarChar(5)
+  eventos        eventos[]
+  inscricoes     inscricoes[]
+  tipo_perfil    tipo_perfil? @relation(fields: [id_tipo_perfil], references: [id_tipo_perfil], onDelete: NoAction, onUpdate: NoAction, map: "fk_usuarios_perfil")
+}
