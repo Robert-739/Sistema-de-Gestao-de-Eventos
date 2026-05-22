@@ -17,7 +17,6 @@ export default function LoginPage() {
     <div className="flex items-center justify-center min-h-screen bg-[#eeeeee] font-sans p-4 text-black">
       <div className="bg-white p-8 rounded-2xl shadow-sm w-full max-w-[450px] flex flex-col items-center">
         
-        {/* Ícone Amarelo do Cabeçalho */}
         <div className="bg-[#FFD700] p-4 rounded-2xl mb-6">
           <GraduationCap size={40} className="text-black" />
         </div>

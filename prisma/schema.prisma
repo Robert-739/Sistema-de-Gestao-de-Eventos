@@ -12,6 +12,10 @@ datasource db {
 model eventos {
   id_evento           Int          @id @default(autoincrement())
   titulo              String       @db.VarChar(150)
+  descricao           String       @db.VarChar(1000) // Adicionado para a descrição detalhada
+  palestrante         String       @db.VarChar(100)  // Adicionado para o nome do palestrante
+  carga_horaria       Int          @default(0)       // Adicionado para as horas complementares
+  vagas_limite        Int          @default(0)       // Adicionado para controle de vagas
   data_inicio         DateTime     @default(now()) @db.Date
   data_fim            DateTime     @db.Date
   hora_inicio         DateTime     @db.Time(6)
@@ -29,12 +33,19 @@ model inscricoes {
   id_inscricao     Int       @id @default(autoincrement())
   id_aluno         Int?
   id_evento        Int?
+  
+  // Controle do QR Code (Validação de Entrada e Saída)
   presenca_entrada Boolean?  @default(false)
+  horario_entrada  DateTime? @db.Timestamp(6) // Adicionado para auditoria de entrada
   presenca_saida   Boolean?  @default(false)
-  codigo_validacao String?   @db.VarChar(10)
+  horario_saida    DateTime? @db.Timestamp(6) // Adicionado para auditoria de saída
+  
+  codigo_validacao String?   @db.VarChar(50) // Aumentado para suportar strings de QR Code maiores se necessário
   data_inscricao   DateTime? @default(now()) @db.Timestamp(6)
   usuarios         usuarios? @relation(fields: [id_aluno], references: [id_usuario], onDelete: NoAction, onUpdate: NoAction, map: "fk_inscricoes_aluno")
   eventos          eventos?  @relation(fields: [id_evento], references: [id_evento], onDelete: NoAction, onUpdate: NoAction, map: "fk_inscricoes_evento")
+
+  @@unique([id_aluno, id_evento], map: "uniq_aluno_evento") // Evita inscrições duplicadas
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.

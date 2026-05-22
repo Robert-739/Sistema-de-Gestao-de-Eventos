@@ -13,23 +13,19 @@ export async function logarUsuario(prevState: LoginState | null, formData: FormD
   const senhaRaw = formData.get("senha") as string;
   const perfilSelecionado = formData.get("perfil_selecionado") as string; // 'ALU', 'COO' ou 'DIR'
 
-  // 1. Buscar o usuário pelo e-mail
   const usuario = await prisma.usuarios.findUnique({
     where: { email },
-    include: { tipo_perfil: true } // Incluímos o perfil para validar
+    include: { tipo_perfil: true } 
   });
 
-  // 2. Validações de segurança
   if (!usuario) {
     return { error: "E-mail ou senha incorretos." };
   }
 
-  // 3. Validação de Perfil: O usuário está tentando logar no cargo certo?
   if (usuario.id_tipo_perfil !== perfilSelecionado) {
     return { error: `Este usuário não está cadastrado como ${perfilSelecionado === 'ALU' ? 'Aluno' : perfilSelecionado === 'COO' ? 'Coordenador' : 'Diretor'}.` };
   }
 
-  // 4. Comparar a senha
   const senhaCorreta = await bcrypt.compare(senhaRaw, usuario.senha);
 
   if (!senhaCorreta) {
@@ -45,6 +41,6 @@ export async function logarUsuario(prevState: LoginState | null, formData: FormD
   } else if (perfil === "DIR") {
     redirect("/dashboard/diretor");
   } else {
-    redirect("/"); // Caso de segurança: volta para a home se não tiver perfil
+    redirect("/"); 
   } 
 }

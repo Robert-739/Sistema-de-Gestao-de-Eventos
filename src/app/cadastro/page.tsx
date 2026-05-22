@@ -4,28 +4,24 @@ import { useActionState } from "react"
 import { registrarUsuario, FormState } from "./actions"
 import { User, Mail, Lock, GraduationCap } from "lucide-react"
 
-// O estado inicial precisa bater com o tipo FormState da action
 const initialState: FormState = {
   error: null,
   success: false
 }
 
 export default function CadastroPage() {
-  // Conectando a página com a Action
   const [state, formAction, isPending] = useActionState(registrarUsuario, initialState)
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-white sm:bg-[#eeeeee] font-sans p-4 text-black">
       <div className="bg-white p-8 rounded-2xl shadow-sm w-full max-w-[450px] flex flex-col items-center">
         
-        {/* Badge de Identificação (Para deixar claro que é área do aluno) */}
         <div className="flex bg-gray-100 p-1 rounded-xl mb-6 w-full">
           <div className="bg-white shadow-sm flex-1 py-2 text-center rounded-lg text-sm font-bold text-gray-800">
             Cadastro do Aluno
           </div>
         </div>
 
-        {/* Ícone Amarelo do Cabeçalho */}
         <div className="bg-[#FFD700] p-4 rounded-2xl mb-4">
           <GraduationCap size={40} className="text-black" />
         </div>
@@ -35,14 +31,12 @@ export default function CadastroPage() {
           Acesse seus eventos e certificados
         </p>
         
-        {/* Alerta de Erro */}
         {state?.error && (
           <div className="w-full bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm mb-4">
             {state.error}
           </div>
         )}
 
-        {/* Alerta de Sucesso */}
         {state?.success && (
           <div className="w-full bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-xl text-sm mb-4 text-center">
             Cadastro realizado! <a href="/login" className="underline font-bold">Faça login agora.</a>
