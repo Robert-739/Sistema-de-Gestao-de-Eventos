@@ -11,12 +11,10 @@ export default function ScannerPage() {
   const [status, setStatus] = useState<{ success?: string; error?: string } | null>(null)
   const [scaneando, setScaneando] = useState(true)
   
-  // CORREÇÃO: Tipando corretamente o useRef para guardar a instância do scanner no .current
   const scannerRef = useRef<Html5QrcodeScanner | null>(null)
 
   useEffect(() => {
     if (scaneando) {
-      // Criando a instância e guardando no .current
       const scanner = new Html5QrcodeScanner(
         "reader",
         { 
@@ -30,7 +28,6 @@ export default function ScannerPage() {
       scannerRef.current = scanner
 
       scanner.render(
-        // CORREÇÃO: Adicionado tipo string para o código lido
         async (decodedText: string) => {
           setScaneando(false) 
           
@@ -49,15 +46,13 @@ export default function ScannerPage() {
             setStatus({ success: resultado.success })
           }
         },
-        // CORREÇÃO: Ignorando o erro de scan contínuo com tipagem correta
         (_error: unknown) => {
-          // O scanner dispara isso a cada milissegundo procurando um QR code na imagem. Pode deixar vazio.
+          // Ignora erros contínuos de busca
         }
       )
     }
 
     return () => {
-      // CORREÇÃO: Limpeza usando o .current padrão do React
       if (scannerRef.current) {
         scannerRef.current.clear()
           .then(() => {
@@ -66,11 +61,31 @@ export default function ScannerPage() {
           .catch((err: unknown) => console.error("Erro ao limpar scanner", err))
       }
     }
-  }, [scaneando, tipoPresenca])
+    // CORREÇÃO: Tiramos o tipoPresenca daqui para evitar que o efeito tente reiniciar o scanner no meio do clique!
+  }, [scaneando])
 
   const resetarScanner = () => {
     setStatus(null)
     setScaneando(true)
+  }
+
+  // CORREÇÃO: Função para alternar o modo limpando o scanner antigo antes de mudar o estado
+  const alternarTipoPresenca = (novoTipo: "entrada" | "saida") => {
+    if (tipoPresenca === novoTipo) return
+    
+    if (scannerRef.current) {
+      scannerRef.current.clear()
+        .then(() => {
+          scannerRef.current = null
+          setTipoPresenca(novoTipo)
+        })
+        .catch((e) => {
+          console.error(e)
+          setTipoPresenca(novoTipo)
+        })
+    } else {
+      setTipoPresenca(novoTipo)
+    }
   }
 
   return (
@@ -93,13 +108,13 @@ export default function ScannerPage() {
         {scaneando && (
           <div className="grid grid-cols-2 gap-2 bg-gray-900 p-1 rounded-xl mb-6 border border-gray-700">
             <button
-              onClick={() => setTipoPresenca("entrada")}
+              onClick={() => alternarTipoPresenca("entrada")}
               className={`flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-all ${tipoPresenca === "entrada" ? "bg-yellow-500 text-white shadow" : "text-gray-400 hover:text-white"}`}
             >
               <LogIn size={14} /> Check-In (Entrada)
             </button>
             <button
-              onClick={() => setTipoPresenca("saida")}
+              onClick={() => alternarTipoPresenca("saida")}
               className={`flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-all ${tipoPresenca === "saida" ? "bg-yellow-500 text-white shadow" : "text-gray-400 hover:text-white"}`}
             >
               <LogOut size={14} /> Check-Out (Saída)
@@ -110,7 +125,9 @@ export default function ScannerPage() {
         {/* Container do Scanner da Câmera */}
         <div className="overflow-hidden rounded-xl bg-gray-900 border border-gray-700 relative flex flex-col items-center justify-center min-h-[300px]">
           {scaneando ? (
-            <div id="reader" className="w-full text-black bg-white" />
+            /* CORREÇÃO: Adicionamos a key dinâmica vinculada ao tipoPresenca. 
+               Isso força o React a recriar a div limpa do zero no DOM quando muda o botão! */
+            <div id="reader" key={tipoPresenca} className="w-full text-black bg-white" />
           ) : (
             <div className="p-6 text-center flex flex-col items-center justify-center">
               {status?.error ? (
