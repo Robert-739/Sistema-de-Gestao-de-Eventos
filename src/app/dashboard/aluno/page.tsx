@@ -3,11 +3,9 @@ import { Calendar, Clock, Award, User, Ticket, QrCode } from "lucide-react"
 import { BotaoInscricao } from "./components/BotaoInscricao"
 import { CardIngresso } from "./components/CardIngresso"
 
-// Simulando o ID do aluno logado (mesmo da Action)
 const ID_ALUNO_LOGADO = 2
 
 async function obterDadosDoAluno() {
-  // Busca todos os eventos do banco
   const todosEventos = await prisma.eventos.findMany({
     include: {
       inscricoes: true
@@ -15,7 +13,6 @@ async function obterDadosDoAluno() {
     orderBy: { data_inicio: "asc" }
   })
 
-  // Busca apenas as inscrições que este aluno específico já fez
   const minhasInscricoes = await prisma.inscricoes.findMany({
     where: { id_aluno: ID_ALUNO_LOGADO },
     include: { eventos: true },

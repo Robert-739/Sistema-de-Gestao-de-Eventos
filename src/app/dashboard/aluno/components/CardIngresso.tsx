@@ -2,10 +2,9 @@
 
 import { useState } from "react"
 import { QRCodeSVG } from "qrcode.react"
-import { Calendar, Clock, QrCode, X, Trash2 } from "lucide-react" // CORREÇÃO: Ajustado para Calendar (com C maiúsculo) e limpo o erro de variável não usada
+import { Calendar, Clock, QrCode, X, Trash2 } from "lucide-react" 
 import { cancelarInscricao } from "../actions"
 
-// CORREÇÃO: Criamos uma interface para detalhar a estrutura exata que o componente espera receber
 interface Evento {
   titulo: string
   data_inicio: Date | string
@@ -18,7 +17,7 @@ interface Inscricao {
   eventos: Evento | null
 }
 
-export function CardIngresso({ inscricao }: { inscricao: Inscricao }) { // CORREÇÃO: Substituído 'any' pela interface 'Inscricao'
+export function CardIngresso({ inscricao }: { inscricao: Inscricao }) {
   const [modalAberto, setModalAberto] = useState(false)
 
   const deletar = async () => {
@@ -82,7 +81,6 @@ export function CardIngresso({ inscricao }: { inscricao: Inscricao }) { // CORRE
             <h3 className="font-bold text-md text-gray-900 mb-1 pr-6">{inscricao.eventos?.titulo}</h3>
             <p className="text-xs text-gray-500 mb-6">Apresente este código no início e no término do evento</p>
 
-            {/* Gerador Real do QR Code */}
             <div className="bg-gray-50 p-4 rounded-xl inline-block border border-gray-100 shadow-inner mb-6">
               <QRCodeSVG 
                 value={String(inscricao.id_inscricao)}
