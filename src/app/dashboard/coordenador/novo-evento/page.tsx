@@ -33,7 +33,7 @@ export default function NovoEventoPage() {
 
         {state?.success && (
           <div className="bg-green-50 border border-green-200 text-green-600 p-3 rounded-xl mb-6 text-sm text-center font-semibold">
-            🎉 Evento publicado com sucesso!
+            Evento publicado com sucesso!
           </div>
         )}
 

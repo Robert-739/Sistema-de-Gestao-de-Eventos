@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { QRCodeSVG } from "qrcode.react"
-import { Calendar, Clock, QrCode, X, Trash2 } from "lucide-react" 
+import { Calendar, Clock, QrCode, X, Trash2 } from "lucide-react"
 import { cancelarInscricao } from "../actions"
 
 interface Evento {
@@ -36,7 +36,7 @@ export function CardIngresso({ inscricao }: { inscricao: Inscricao }) {
               Ingresso Confirmado
             </span>
             <h3 className="font-bold text-sm mt-2 line-clamp-1">{inscricao.eventos?.titulo}</h3>
-            
+
             {/* Status de Presença */}
             <div className="mt-4 flex gap-2 text-[10px]">
               <span className={`px-2 py-0.5 rounded font-medium ${inscricao.presenca_entrada ? "bg-white/20 text-gray-950" : "bg-white/80 text-gray-900"}`}>
@@ -46,10 +46,18 @@ export function CardIngresso({ inscricao }: { inscricao: Inscricao }) {
                 {inscricao.presenca_saida ? "Out: Check-out OK" : "Out: Pendente"}
               </span>
             </div>
+            {inscricao.presenca_entrada && inscricao.presenca_saida && (
+              <a
+                href={`/api/certificado?id=${inscricao.id_inscricao}`}
+                className="mt-2 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-center py-2 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 shadow active:scale-95 animate-pulse"
+              >
+                Baixar Meu Certificado
+              </a>
+            )}
           </div>
 
           <div className="mt-6 pt-3 border-t border-white/10 flex items-center justify-between">
-            <button 
+            <button
               onClick={deletar}
               className="p-2 text-black hover:text-red-400 rounded-lg transition-colors"
               title="Cancelar inscrição"
@@ -71,7 +79,7 @@ export function CardIngresso({ inscricao }: { inscricao: Inscricao }) {
       {modalAberto && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
           <div className="bg-white p-6 rounded-2xl max-w-sm w-full border border-gray-100 shadow-2xl relative text-center">
-            <button 
+            <button
               onClick={() => setModalAberto(false)}
               className="absolute right-4 top-4 p-1 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
             >
@@ -82,7 +90,7 @@ export function CardIngresso({ inscricao }: { inscricao: Inscricao }) {
             <p className="text-xs text-gray-500 mb-6">Apresente este código no início e no término do evento</p>
 
             <div className="bg-gray-50 p-4 rounded-xl inline-block border border-gray-100 shadow-inner mb-6">
-              <QRCodeSVG 
+              <QRCodeSVG
                 value={String(inscricao.id_inscricao)}
                 size={180}
                 bgColor={"#ffffff"}

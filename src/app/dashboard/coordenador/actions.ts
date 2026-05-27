@@ -54,58 +54,82 @@ export async function cadastrarEvento(prevState: EventoState | null, formData: F
     return { error: "Erro interno ao salvar o evento no banco.", success: false };
   }
 }
+
 export async function registrarPresencaQRCode(
   idInscricao: string,
   tipoPresenca: "entrada" | "saida"
 ) {
   try {
-    // 1. Verifica se a inscrição existe no banco
+    // 1. Limpeza de String e Validação de Entrada Nula/Vazia (Evita que bipes fantasmas quebrem o parseInt)
+    const idLimpo = idInscricao?.trim();
+    if (!idLimpo || isNaN(Number(idLimpo))) {
+      return { error: "Código inválido ou leitura corrompida. Tente novamente." };
+    }
+
+    const idInscricaoNumero = Number(idLimpo);
+
+    // 2. Busca a inscrição no banco de dados incluindo os dados do evento mapeado
     const inscricao = await prisma.inscricoes.findUnique({
-      where: { id_inscricao: Number(idInscricao) }, // Convertendo para número já que no schema está como Int autoincrement
+      where: { id_inscricao: idInscricaoNumero },
       include: { eventos: true }
     });
 
+    // 3. Validação de Existência Básica do Ingresso
     if (!inscricao) {
-      return { error: "Ingressso/Inscrição inválida ou não encontrada." };
+      return { error: "Ingresso não encontrado ou não cadastrado no sistema." };
     }
 
     const agora = new Date();
 
-    // 2. Atualiza a Entrada ou a Saída dependendo do que o coordenador selecionou na tela
+    // 4. Fluxo e Regras para Registro de ENTRADA (Check-In)
     if (tipoPresenca === "entrada") {
-      if (inscricao.presenca_entrada) {
-        return { error: "Entrada deste aluno já foi registrada anteriormente!" };
+      if (inscricao.presenca_entrada === true) {
+        return { error: "Atenção: A entrada deste aluno já foi registrada anteriormente!" };
       }
 
       await prisma.inscricoes.update({
-        where: { id_inscricao: Number(idInscricao) },
+        where: { id_inscricao: idInscricaoNumero },
         data: {
           presenca_entrada: true,
           horario_entrada: agora,
         },
       });
-      return { success: `Entrada liberada para o evento: ${inscricao.eventos?.titulo}` };
-    } else {
-      // Validação de Saída
-      if (!inscricao.presenca_entrada) {
-        return { error: "Atenção: Este aluno não registrou a Entrada neste evento!" };
+
+      // Força as telas do Aluno e do Coordenador a atualizarem os crachás de status na hora
+      revalidatePath("/dashboard/aluno");
+      revalidatePath("/dashboard/coordenador");
+
+      return { success: `Entrada autorizada! Evento: ${inscricao.eventos?.titulo || "Acadêmico"}` };
+    } 
+    
+    // 5. Fluxo e Regras para Registro de SAÍDA (Check-Out)
+    else {
+      // Bloqueio crucial: impede check-out se o estudante nunca entrou no local
+      if (inscricao.presenca_entrada !== true) {
+        return { error: "Bloqueado: Não é possível registrar saída sem um check-in de entrada prévio!" };
       }
-      if (inscricao.presenca_saida) {
-        return { error: "Saída deste aluno já foi registrada anteriormente!" };
+
+      if (inscricao.presenca_saida === true) {
+        return { error: "Atenção: A saída deste aluno já foi registrada anteriormente!" };
       }
 
       await prisma.inscricoes.update({
-        where: { id_inscricao: Number(idInscricao) },
+        where: { id_inscricao: idInscricaoNumero },
         data: {
           presenca_saida: true,
           horario_saida: agora,
         },
       });
-      return { success: `Saída registrada! Carga horária validada com sucesso.` };
+
+      // Força a atualização do cache para liberar visualmente o futuro botão de certificado
+      revalidatePath("/dashboard/aluno");
+      revalidatePath("/dashboard/coordenador");
+
+      return { success: `Saída registrada com sucesso! Carga horária computada.` };
     }
 
   } catch (error) {
-    console.error("Erro ao validar QR Code:", error);
-    return { error: "Erro interno no servidor ao processar o QR Code." };
+    console.error("Erro crítico ao validar QR Code na Server Action:", error);
+    return { error: "Erro interno no servidor ao processar os dados de presença." };
   }
 }
