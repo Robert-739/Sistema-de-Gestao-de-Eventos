@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import PDFDocument from "pdfkit"
+import path from "path" 
+import fs from "fs"
 
 export const dynamic = "force-dynamic"
 
@@ -34,11 +36,19 @@ export async function GET(request: NextRequest) {
       return new NextResponse("Certificado indisponível. Presença incompleta.", { status: 403 })
     }
 
-    // 4. Criação do documento PDF em memória (A4 - Paisagem)
+    // --- CONFIGURAÇÃO DE FONTES LOCAIS PARA A VERCEL ---
+    const pastaFontes = path.join(process.cwd(), "src", "assets", "fonts")
+    const fonteRegular = path.join(pastaFontes, "Roboto-Regular.ttf")
+    const fonteBold = path.join(pastaFontes, "Roboto-Bold.ttf")
+
+    // ALTERAÇÃO AQUI: Criamos o documento sem a primeira página automática.
+    // Isso impede o PDFKit de tentar carregar a fonte 'Helvetica' padrão do sistema.
     const doc = new PDFDocument({
       layout: "landscape",
       size: "A4",
-      margins: { top: 50, bottom: 50, left: 50, right: 50 }
+      margins: { top: 50, bottom: 50, left: 50, right: 50 },
+      bufferPages: true,
+      autoFirstPage: false // <--- EVITA O ERRO DO HELVETICA.AFM
     })
 
     const chunks: Buffer[] = []
@@ -47,6 +57,13 @@ export async function GET(request: NextRequest) {
     const pdfBuffer = await new Promise<Buffer>((resolve, reject) => {
       doc.on("end", () => resolve(Buffer.concat(chunks)))
       doc.on("error", (err) => reject(err))
+
+      // Primeiro registramos nossas fontes customizadas
+      doc.registerFont("Custom-Regular", fonteRegular)
+      doc.registerFont("Custom-Bold", fonteBold)
+
+      // Agora que as fontes seguras estão registradas, adicionamos a página manualmente
+      doc.addPage()
 
       // ---- DESENHO DO LAYOUT DO CERTIFICADO ----
       
@@ -62,49 +79,49 @@ export async function GET(request: NextRequest) {
 
       // Título Principal
       doc.moveDown(4)
-      doc.font("Helvetica-Bold")
+      doc.font("Custom-Bold")
          .fontSize(36)
          .fillColor("#0f172a") 
          .text("CERTIFICADO DE PARTICIPAÇÃO", { align: "center" })
 
       doc.moveDown(1)
-      doc.font("Helvetica")
+      doc.font("Custom-Regular")
          .fontSize(16)
          .fillColor("#475569") 
          .text("Certificamos para os devidos fins que o estudante", { align: "center" })
 
-      // Nome do Aluno (Puxado do campo 'nome' da tabela 'usuarios')
+      // Nome do Aluno
       doc.moveDown(1)
-      doc.font("Helvetica-Bold")
+      doc.font("Custom-Bold")
          .fontSize(24)
          .fillColor("#eab308") 
          .text(inscricao.usuarios?.nome || "Estudante", { align: "center" })
 
       doc.moveDown(1.5)
-      doc.font("Helvetica")
+      doc.font("Custom-Regular")
          .fontSize(15)
          .fillColor("#475569")
          .text("concluiu com êxito sua participação no evento acadêmico", { align: "center" })
 
-      // Título do Evento (Puxado do campo 'titulo' da tabela 'eventos')
+      // Título do Evento
       doc.moveDown(0.8)
-      doc.font("Helvetica-Bold")
+      doc.font("Custom-Bold")
          .fontSize(20)
          .fillColor("#0f172a")
          .text(`"${inscricao.eventos?.titulo || "Evento Acadêmico"}"`, { align: "center" })
 
-      // Carga horária total cadastrada no evento
+      // Carga horária total
       const cargaHoraria = inscricao.eventos?.carga_horaria || 0
       doc.moveDown(1.5)
-      doc.font("Helvetica")
+      doc.font("Custom-Regular")
          .fontSize(14)
          .text(`cumprindo uma carga horária total de `, { align: "center", continued: true })
-         .font("Helvetica-Bold")
+         .font("Custom-Bold")
          .text(`${cargaHoraria} horas.`, { continued: false })
 
-      // Código de validação para a secretaria do Einstein College
+      // Código de validação no rodapé
       doc.moveDown(4)
-      doc.font("Helvetica-Oblique")
+      doc.font("Custom-Regular")
          .fontSize(10)
          .fillColor("#94a3b8") 
          .text(`Código de Autenticidade Digital: SGEA-REG-${inscricao.id_inscricao}-${inscricao.eventos?.id_evento || 0}`, { align: "center" })
