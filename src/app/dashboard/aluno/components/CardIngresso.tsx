@@ -46,13 +46,17 @@ export function CardIngresso({ inscricao }: { inscricao: Inscricao }) {
                 {inscricao.presenca_saida ? "Out: Check-out OK" : "Out: Pendente"}
               </span>
             </div>
+
+            {/* Movido para cá: Botão de Certificado condicional fora do bloco de texto */}
             {inscricao.presenca_entrada && inscricao.presenca_saida && (
-              <a
-                href={`/api/certificado?id=${inscricao.id_inscricao}`}
-                className="mt-2 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-center py-2 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 shadow active:scale-95 animate-pulse"
-              >
-                Baixar Meu Certificado
-              </a>
+              <div className="mt-3">
+                <a
+                  href={`/api/certificado?id=${inscricao.id_inscricao}`}
+                  className="block w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-center py-2 rounded-xl text-xs transition-all shadow active:scale-95 animate-pulse"
+                >
+                  Baixar Meu Certificado
+                </a>
+              </div>
             )}
           </div>
 

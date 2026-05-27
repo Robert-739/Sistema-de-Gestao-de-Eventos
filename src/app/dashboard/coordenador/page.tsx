@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import Link from "next/link"
 import { Calendar, Plus, Clock, Users, Award, User, ArrowRight } from "lucide-react"
+import { eventos } from "@/generated/prisma"
 
 // Função para buscar os eventos direto no servidor (Server Component)
 async function obterEventos() {
@@ -63,7 +64,7 @@ export default async function DashboardCoordenadorPage() {
             </h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {eventosCadastrados.map((evento) => {
+              {eventosCadastrados.map((evento: eventos) => {
                 // Formatação simples de data para exibição amigável brasileira
                 const dataFormatada = new Date(evento.data_inicio).toLocaleDateString("pt-BR")
 
