@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import PDFDocument from "pdfkit"
-import path from "path" 
-import fs from "fs"
+import path from "path"
 
 export const dynamic = "force-dynamic"
 
 export async function GET(request: NextRequest) {
   try {
-    // 1. Pega o id_inscricao vindo da URL (Ex: /api/certificado?id=6)
+    // 1. Pega o id_inscricao vindo da URL
     const { searchParams } = new URL(request.url)
     const idInscricaoStr = searchParams.get("id")
 
@@ -18,7 +17,7 @@ export async function GET(request: NextRequest) {
 
     const idInscricao = Number(idInscricaoStr)
 
-    // 2. Busca a inscrição trazendo exatamente as relações do seu schema (usuarios e eventos)
+    // 2. Busca a inscrição trazendo as relações exatas do seu schema
     const inscricao = await prisma.inscricoes.findUnique({
       where: { id_inscricao: idInscricao },
       include: {
@@ -31,24 +30,23 @@ export async function GET(request: NextRequest) {
       return new NextResponse("Inscrição não encontrada no sistema.", { status: 404 })
     }
 
-    // 3. Trava de segurança com base no seu schema (aceita null ou false como pendente)
+    // 3. Trava de segurança com base no seu schema
     if (inscricao.presenca_entrada !== true || inscricao.presenca_saida !== true) {
       return new NextResponse("Certificado indisponível. Presença incompleta.", { status: 403 })
     }
 
-    // --- CONFIGURAÇÃO DE FONTES LOCAIS PARA A VERCEL ---
-    const pastaFontes = path.join(process.cwd(), "src", "assets", "fonts")
-    const fonteRegular = path.join(pastaFontes, "Roboto-Regular.ttf")
-    const fonteBold = path.join(pastaFontes, "Roboto-Bold.ttf")
+    // --- CONFIGURAÇÃO DE FONTES LOCAIS (Compatível com Turbopack e Vercel) ---
+    const raizProjeto = process.cwd()
+    const fonteRegular = path.resolve(raizProjeto, "src/assets/fonts/Roboto-Regular.ttf")
+    const fonteBold = path.resolve(raizProjeto, "src/assets/fonts/Roboto-Bold.ttf")
 
-    // ALTERAÇÃO AQUI: Criamos o documento sem a primeira página automática.
-    // Isso impede o PDFKit de tentar carregar a fonte 'Helvetica' padrão do sistema.
+    // Instancia o PDF passando a fonte física no construtor para anular a Helvetica de vez
     const doc = new PDFDocument({
       layout: "landscape",
       size: "A4",
       margins: { top: 50, bottom: 50, left: 50, right: 50 },
       bufferPages: true,
-      autoFirstPage: false // <--- EVITA O ERRO DO HELVETICA.AFM
+      font: fonteRegular 
     })
 
     const chunks: Buffer[] = []
@@ -58,12 +56,8 @@ export async function GET(request: NextRequest) {
       doc.on("end", () => resolve(Buffer.concat(chunks)))
       doc.on("error", (err) => reject(err))
 
-      // Primeiro registramos nossas fontes customizadas
-      doc.registerFont("Custom-Regular", fonteRegular)
+      // Registra a variante negrito
       doc.registerFont("Custom-Bold", fonteBold)
-
-      // Agora que as fontes seguras estão registradas, adicionamos a página manualmente
-      doc.addPage()
 
       // ---- DESENHO DO LAYOUT DO CERTIFICADO ----
       
@@ -84,8 +78,9 @@ export async function GET(request: NextRequest) {
          .fillColor("#0f172a") 
          .text("CERTIFICADO DE PARTICIPAÇÃO", { align: "center" })
 
+      // Texto descritivo
       doc.moveDown(1)
-      doc.font("Custom-Regular")
+      doc.font(fonteRegular)
          .fontSize(16)
          .fillColor("#475569") 
          .text("Certificamos para os devidos fins que o estudante", { align: "center" })
@@ -98,7 +93,7 @@ export async function GET(request: NextRequest) {
          .text(inscricao.usuarios?.nome || "Estudante", { align: "center" })
 
       doc.moveDown(1.5)
-      doc.font("Custom-Regular")
+      doc.font(fonteRegular)
          .fontSize(15)
          .fillColor("#475569")
          .text("concluiu com êxito sua participação no evento acadêmico", { align: "center" })
@@ -113,7 +108,7 @@ export async function GET(request: NextRequest) {
       // Carga horária total
       const cargaHoraria = inscricao.eventos?.carga_horaria || 0
       doc.moveDown(1.5)
-      doc.font("Custom-Regular")
+      doc.font(fonteRegular)
          .fontSize(14)
          .text(`cumprindo uma carga horária total de `, { align: "center", continued: true })
          .font("Custom-Bold")
@@ -121,7 +116,7 @@ export async function GET(request: NextRequest) {
 
       // Código de validação no rodapé
       doc.moveDown(4)
-      doc.font("Custom-Regular")
+      doc.font(fonteRegular)
          .fontSize(10)
          .fillColor("#94a3b8") 
          .text(`Código de Autenticidade Digital: SGEA-REG-${inscricao.id_inscricao}-${inscricao.eventos?.id_evento || 0}`, { align: "center" })

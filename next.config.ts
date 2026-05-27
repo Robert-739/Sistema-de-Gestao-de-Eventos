@@ -1,11 +1,9 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  /* Se você já tiver outras configurações aqui dentro, mantenha-as e adicione apenas a linha abaixo */
-  experimental: {
-    outputFileTracingIncludes: {
-      '/api/certificado': ['./src/assets/fonts/**/*'],
-    },
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  outputFileTracingIncludes: {
+    '/api/certificado': ['./src/assets/fonts/**/*'],
   },
 };
 
-module.exports = nextConfig;
+export default nextConfig;
