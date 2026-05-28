@@ -1,6 +1,7 @@
 "use server"
 
 import { prisma } from "@/lib/prisma";
+import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 
 export type EventoState = {
@@ -19,12 +20,17 @@ export async function cadastrarEvento(prevState: EventoState | null, formData: F
   const horaInicioStr = formData.get("hora_inicio") as string;
   const horaFimStr = formData.get("hora_fim") as string;
 
-  // ID do coordenador mockado temporariamente até configurarmos a sessão/cookies do usuário logado
-  // Depois substituiremos pelo ID real do coordenador vindo da sessão
-  const id_usuario_coordenador = 4; 
+  // Resgata o ID do coordenador logado direto do cookie da sessão
+  const cookieStore = await cookies();
+  const idDoCookie = cookieStore.get("usuario_id")?.value;
+
+  if (!idDoCookie) {
+    return { error: "Sessão expirada ou usuário não autenticado. Faça login novamente.", success: false };
+  }
+
+  const id_usuario_coordenador = Number(idDoCookie); 
 
   try {
-    // Conversão de datas e horas para o formato aceito pelo PostgreSQL/Prisma
     const data_inicio = new Date(`${dataInicioStr}T00:00:00`);
     const data_fim = new Date(`${dataFimStr}T00:00:00`);
     const hora_inicio = new Date(`1970-01-01T${horaInicioStr}:00`);
@@ -45,7 +51,6 @@ export async function cadastrarEvento(prevState: EventoState | null, formData: F
       },
     });
 
-    // Atualiza a listagem de eventos instantaneamente
     revalidatePath("/dashboard/coordenador");
 
     return { error: null, success: true };
@@ -60,7 +65,6 @@ export async function registrarPresencaQRCode(
   tipoPresenca: "entrada" | "saida"
 ) {
   try {
-    // 1. Limpeza de String e Validação de Entrada Nula/Vazia (Evita que bipes fantasmas quebrem o parseInt)
     const idLimpo = idInscricao?.trim();
     if (!idLimpo || isNaN(Number(idLimpo))) {
       return { error: "Código inválido ou leitura corrompida. Tente novamente." };
@@ -68,20 +72,17 @@ export async function registrarPresencaQRCode(
 
     const idInscricaoNumero = Number(idLimpo);
 
-    // 2. Busca a inscrição no banco de dados incluindo os dados do evento mapeado
     const inscricao = await prisma.inscricoes.findUnique({
       where: { id_inscricao: idInscricaoNumero },
       include: { eventos: true }
     });
 
-    // 3. Validação de Existência Básica do Ingresso
     if (!inscricao) {
       return { error: "Ingresso não encontrado ou não cadastrado no sistema." };
     }
 
     const agora = new Date();
 
-    // 4. Fluxo e Regras para Registro de ENTRADA (Check-In)
     if (tipoPresenca === "entrada") {
       if (inscricao.presenca_entrada === true) {
         return { error: "Atenção: A entrada deste aluno já foi registrada anteriormente!" };
@@ -95,16 +96,11 @@ export async function registrarPresencaQRCode(
         },
       });
 
-      // Força as telas do Aluno e do Coordenador a atualizarem os crachás de status na hora
       revalidatePath("/dashboard/aluno");
       revalidatePath("/dashboard/coordenador");
 
       return { success: `Entrada autorizada! Evento: ${inscricao.eventos?.titulo || "Acadêmico"}` };
-    } 
-    
-    // 5. Fluxo e Regras para Registro de SAÍDA (Check-Out)
-    else {
-      // Bloqueio crucial: impede check-out se o estudante nunca entrou no local
+    } else {
       if (inscricao.presenca_entrada !== true) {
         return { error: "Bloqueado: Não é possível registrar saída sem um check-in de entrada prévio!" };
       }
@@ -121,7 +117,6 @@ export async function registrarPresencaQRCode(
         },
       });
 
-      // Força a atualização do cache para liberar visualmente o futuro botão de certificado
       revalidatePath("/dashboard/aluno");
       revalidatePath("/dashboard/coordenador");
 

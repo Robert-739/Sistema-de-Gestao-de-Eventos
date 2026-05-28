@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 export type LoginState = {
@@ -31,6 +32,15 @@ export async function logarUsuario(prevState: LoginState | null, formData: FormD
   if (!senhaCorreta) {
     return { error: "E-mail ou senha incorretos." };
   }
+
+  // Salva o ID do usuário de forma segura nos cookies do navegador
+  const cookieStore = await cookies();
+  cookieStore.set("usuario_id", String(usuario.id_usuario), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 60 * 60 * 24, // Expira em 1 dia
+    path: "/",
+  });
 
   const perfil = usuario.id_tipo_perfil;
 

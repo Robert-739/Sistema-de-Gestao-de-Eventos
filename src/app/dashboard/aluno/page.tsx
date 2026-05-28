@@ -1,11 +1,14 @@
 import { prisma } from "@/lib/prisma"
+import { cookies } from "next/headers"
 import { Calendar, Clock, Award, User, Ticket, QrCode } from "lucide-react"
 import { BotaoInscricao } from "./components/BotaoInscricao"
 import { CardIngresso } from "./components/CardIngresso"
 
-const ID_ALUNO_LOGADO = 2
-
 async function obterDadosDoAluno() {
+  const cookieStore = await cookies();
+  const idDoCookie = cookieStore.get("usuario_id")?.value;
+  const idAlunoLogado = idDoCookie ? Number(idDoCookie) : 0;
+
   const todosEventos = await prisma.eventos.findMany({
     include: {
       inscricoes: true
@@ -14,16 +17,16 @@ async function obterDadosDoAluno() {
   })
 
   const minhasInscricoes = await prisma.inscricoes.findMany({
-    where: { id_aluno: ID_ALUNO_LOGADO },
+    where: { id_aluno: idAlunoLogado },
     include: { eventos: true },
     orderBy: { data_inscricao: "desc" }
   })
 
-  return { todosEventos, minhasInscricoes }
+  return { todosEventos, minhasInscricoes, idAlunoLogado }
 }
 
 export default async function DashboardAlunoPage() {
-  const { todosEventos, minhasInscricoes } = await obterDadosDoAluno()
+  const { todosEventos, minhasInscricoes, idAlunoLogado } = await obterDadosDoAluno()
 
   return (
     <div className="p-6 sm:p-8 text-black">
@@ -43,7 +46,7 @@ export default async function DashboardAlunoPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {todosEventos.map((evento) => {
-              const jaInscrito = evento.inscricoes.some(ins => ins.id_aluno === ID_ALUNO_LOGADO)
+              const jaInscrito = evento.inscricoes.some(ins => ins.id_aluno === idAlunoLogado)
               const dataFormatada = new Date(evento.data_inicio).toLocaleDateString("pt-BR")
               const vagasRestantes = evento.vagas_limite - evento.inscricoes.length
 
@@ -61,7 +64,6 @@ export default async function DashboardAlunoPage() {
                       <div className="flex items-center gap-1 justify-end font-semibold text-yellow-600"><span>{vagasRestantes} vagas restantes</span></div>
                     </div>
 
-                    {/* Botão interativo Client-Side */}
                     <BotaoInscricao idEvento={evento.id_evento} jaInscrito={jaInscrito} />
                   </div>
                 </div>
@@ -84,7 +86,6 @@ export default async function DashboardAlunoPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {minhasInscricoes.map((inscricao) => (
-                // Componente que vai gerenciar o modal do QR Code individualmente
                 <CardIngresso key={inscricao.id_inscricao} inscricao={inscricao} />
               ))}
             </div>
