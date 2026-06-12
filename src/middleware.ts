@@ -4,12 +4,12 @@ import type { NextRequest } from "next/server";
 // Rotas que só podem ser acessadas sem login
 const rotasPublicas = ["/login", "/cadastro"];
 
-// Mapa de qual role pode acessar qual rota
-const permissoesPorRota: Record<string, string> = {
-  "/dashboard/aluno": "ALU",
-  "/dashboard/coordenador": "COO",
-  "/dashboard/diretor": "DIR",
-};
+// Mapa de qual role pode acessar qual prefixo de rota
+const permissoesPorRota = [
+  { prefixo: "/dashboard/aluno", perfil: "ALU" },
+  { prefixo: "/dashboard/coordenador", perfil: "COO" },
+  { prefixo: "/dashboard/diretor", perfil: "DIR" },
+];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -35,14 +35,15 @@ export function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
 
-    // Verifica se o usuário tem permissão para a rota que está tentando acessar
-    for (const [rota, perfilNecessario] of Object.entries(permissoesPorRota)) {
-      if (pathname.startsWith(rota) && usuarioPerfil !== perfilNecessario) {
-        // Redireciona para o dashboard correto do perfil do usuário
-        if (usuarioPerfil === "ALU") return NextResponse.redirect(new URL("/dashboard/aluno", request.url));
-        if (usuarioPerfil === "COO") return NextResponse.redirect(new URL("/dashboard/coordenador", request.url));
-        if (usuarioPerfil === "DIR") return NextResponse.redirect(new URL("/dashboard/diretor", request.url));
-      }
+    // Encontra a regra específica para a rota atual que o usuário está tentando acessar
+    const regraRota = permissoesPorRota.find((item) => pathname.startsWith(item.prefixo));
+
+    // Se ele está tentando acessar uma rota controlada e o perfil dele não bate com o daquela rota
+    if (regraRota && usuarioPerfil !== regraRota.perfil) {
+      // Redireciona de volta estritamente para a página inicial correta do perfil dele
+      if (usuarioPerfil === "ALU") return NextResponse.redirect(new URL("/dashboard/aluno", request.url));
+      if (usuarioPerfil === "COO") return NextResponse.redirect(new URL("/dashboard/coordenador", request.url));
+      if (usuarioPerfil === "DIR") return NextResponse.redirect(new URL("/dashboard/diretor", request.url));
     }
   }
 
