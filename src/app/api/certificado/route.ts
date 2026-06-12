@@ -167,11 +167,11 @@ export async function GET(request: NextRequest) {
 
       // Carga Horária Total
       const cargaHoraria = inscricao.eventos?.carga_horaria || 0
-      doc.moveDown(1)
+      doc.moveDown(1.2)
       doc.font(fonteRegular)
-        .fontSize(14)
+        .fontSize(14.5)
         .fillColor(textoSuave)
-        .text(`cumprindo uma carga horária total de `, { align: "center", continued: true })
+        .text(`cumprindo uma carga horária total de ${cargaHoraria} horas.`, { align: "center" })
         .font("Custom-Bold")
         .fillColor(azulMarinho)
         .text(`${cargaHoraria} horas.`, { continued: false })
@@ -205,19 +205,6 @@ export async function GET(request: NextRequest) {
         .fontSize(9)
         .fillColor(douradoNobre)
         .text("ORGANIZAÇÃO ACADÊMICA", { align: "center" })
-
-      // ==========================================
-      // 5. RODAPÉ / AUTENTICIDADE
-      // ==========================================
-
-      // Código de validação discreto no limite inferior
-      doc.y = pageHeight - 55
-      doc.font(fonteRegular)
-        .fontSize(9)
-        .fillColor("#94a3b8")
-        .text(`Código de Autenticidade Digital: SGEA-REG-${inscricao.id_inscricao}-${inscricao.eventos?.id_evento || 0}`, { align: "center" })
-
-      doc.end()
     })
 
     const nomeArquivo = `certificado-evento-${inscricao.id_inscricao}.pdf`

@@ -39,10 +39,10 @@ export function CardIngresso({ inscricao }: { inscricao: Inscricao }) {
 
             {/* Status de Presença */}
             <div className="mt-4 flex gap-2 text-[10px]">
-              <span className={`px-2 py-0.5 rounded font-medium ${inscricao.presenca_entrada ? "bg-white/20 text-gray-950" : "bg-white/80 text-gray-900"}`}>
+              <span className={`px-2 py-0.5 rounded font-medium ${inscricao.presenca_entrada ? "bg-white/40 text-gray-950" : "bg-white/90 text-gray-900"}`}>
                 {inscricao.presenca_entrada ? "In: Check-in OK" : "In: Pendente"}
               </span>
-              <span className={`px-2 py-0.5 rounded font-medium ${inscricao.presenca_saida ? "bg-white/20 text-gray-950" : "bg-white/80 text-gray-900"}`}>
+              <span className={`px-2 py-0.5 rounded font-medium ${inscricao.presenca_saida ? "bg-white/40 text-gray-950" : "bg-white/90 text-gray-900"}`}>
                 {inscricao.presenca_saida ? "Out: Check-out OK" : "Out: Pendente"}
               </span>
             </div>
@@ -52,7 +52,7 @@ export function CardIngresso({ inscricao }: { inscricao: Inscricao }) {
               <div className="mt-3">
                 <a
                   href={`/api/certificado?id=${inscricao.id_inscricao}`}
-                  className="block w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-center py-2 rounded-xl text-xs transition-all shadow active:scale-95 animate-pulse"
+                  className="block w-full bg-white/90 hover:bg-emerald-700 text-gray-950 hover:text-white font-bold text-center py-2 rounded-xl text-xs transition-all shadow active:scale-95 animate-pulse"
                 >
                   Baixar Meu Certificado
                 </a>

@@ -14,6 +14,7 @@
     "html5-qrcode": "^2.3.8",
     "lucide-react": "^1.16.0",
     "next": "16.2.6",
+    "next-auth": "^4.24.14",
     "pdfkit": "^0.18.0",
     "prisma": "^6.19.3",
     "qrcode.react": "^4.2.0",

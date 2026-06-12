@@ -1,11 +1,47 @@
 import Link from "next/link"
-import { LayoutDashboard, Ticket, LogOut, GraduationCap, Award } from "lucide-react"
+import { LayoutDashboard, Ticket, LogOut, GraduationCap } from "lucide-react"
+import { prisma } from "@/lib/prisma" // Ajuste se a instância do seu Prisma estiver em outra pasta
+import { cookies } from "next/headers"
+import { redirect } from "next/navigation" // Importação necessária para o redirecionamento pós-logout
 
-export default function AlunoLayout({
+export default async function AlunoLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  
+  // 1. Acessa os cookies do navegador de forma assíncrona
+  const cookieStore = await cookies()
+  
+  // 2. Captura o ID do usuário exatamente como o seu middleware validou
+  const usuarioId = cookieStore.get("usuario_id")?.value || ""
+
+  // 3. Busca o nome e o e-mail do aluno no banco usando o ID obtido
+  const usuario = await prisma.usuarios.findUnique({
+    where: {
+      id_usuario: Number(usuarioId) || 0, 
+    },
+    select: {
+      nome: true,
+      email: true,
+    }
+  })
+
+  // Fallbacks seguros caso o banco não retorne ou esteja deslogado
+  const nomeUsuario = usuario?.nome || "Estudante"
+  const emailUsuario = usuario?.email || "aluno@einstein.com"
+
+  // 4. Gera as iniciais do nome automaticamente (ex: "Robert Pereira" -> "RP")
+  const obterIniciais = (nome: string) => {
+    const partes = nome.trim().split(" ")
+    if (partes.length >= 2) {
+      return `${partes[0][0]}${partes[partes.length - 1][0]}`.toUpperCase()
+    }
+    return partes[0] ? partes[0][0].toUpperCase() : "AL"
+  }
+
+  const iniciais = obterIniciais(nomeUsuario)
+
   return (
     <div className="flex min-h-screen bg-gray-50 text-black">
       
@@ -36,7 +72,6 @@ export default function AlunoLayout({
               Eventos Disponíveis
             </Link>
 
-            {/* Link âncora que joga direto para a seção de ingressos na mesma página */}
             <Link 
               href="/dashboard/aluno#ingressos" 
               className="flex items-center gap-3 px-3 py-2.5 text-xs font-semibold rounded-xl text-slate-300 hover:bg-slate-900 hover:text-white transition-all group"
@@ -47,25 +82,47 @@ export default function AlunoLayout({
           </nav>
         </div>
 
-        {/* Rodapé da Sidebar (Perfil do Aluno) */}
+        {/* Rodapé da Sidebar - TOTALMENTE DINÂMICO E COM LOGOUT CORRIGIDO */}
         <div className="border-t border-slate-900 pt-4 flex flex-col gap-3">
           <div className="flex items-center gap-2.5 px-2">
-            <div className="w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center text-xs font-bold text-white">
-              RA
+            {/* Iniciais geradas automaticamente */}
+            <div className="w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center text-xs font-bold text-white uppercase shrink-0">
+              {iniciais}
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="text-xs font-bold truncate">(----) Aluno</span>
-              <span className="text-[10px] text-slate-400 truncate">(----).aluno@einstein.com</span>
+              {/* Nome real do banco */}
+              <span className="text-xs font-bold truncate text-slate-200" title={nomeUsuario}>
+                {nomeUsuario}
+              </span>
+              {/* Email real do banco */}
+              <span className="text-[10px] text-slate-400 truncate" title={emailUsuario}>
+                {emailUsuario}
+              </span>
             </div>
           </div>
 
-          <Link 
-            href="/login" 
-            className="flex items-center gap-3 px-3 py-2 text-xs font-semibold text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
+          {/* FORMULÁRIO SERVER ACTION PARA DELETAR OS COOKIES NO CLIQUE */}
+          <form
+            action={async () => {
+              "use server"
+              const cookieStore = await cookies()
+              
+              // Apaga os cookies antigos que travavam você na rota
+              cookieStore.delete("usuario_id")
+              cookieStore.delete("usuario_perfil")
+              
+              // Redireciona de forma limpa para a tela de login
+              redirect("/login")
+            }}
           >
-            <LogOut size={16} />
-            Sair
-          </Link>
+            <button 
+              type="submit"
+              className="w-full flex items-center gap-3 px-3 py-2 text-xs font-semibold text-red-400 hover:bg-red-500/10 rounded-xl transition-all text-left"
+            >
+              <LogOut size={16} />
+              Sair
+            </button>
+          </form>
         </div>
       </aside>
 
