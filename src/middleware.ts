@@ -41,8 +41,15 @@ export function middleware(request: NextRequest) {
 
     const regraRota = permissoesPorRota.find((item) => pathname.startsWith(item.prefixo));
 
-    // Se o perfil tentar invadir rota alheia, desloga e joga pro login
+    // Validação estrita de perfil por rota protegida
     if (regraRota && usuarioPerfil !== regraRota.perfil) {
+      
+      // Exceção de segurança: Garante que se o usuário for DIR e estiver acessando rotas/sub-rotas do diretor, ele não seja barrado
+      if (usuarioPerfil === "DIR" && pathname.includes("/diretor")) {
+        return NextResponse.next();
+      }
+
+      // Se for uma tentativa real de invasão de outra rota, desloga e manda pro login
       const resposta = NextResponse.redirect(new URL("/login", request.url));
       resposta.cookies.delete("usuario_id");
       resposta.cookies.delete("usuario_perfil");
@@ -56,7 +63,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   /*
-   * 🔥 CORREÇÃO DO MATCHER AQUI:
    * Aplica o middleware em todas as rotas do sistema, EXCETO:
    * - api (todas as rotas dentro de /api, como /api/presenca e /api/certificado)
    * - _next/static (arquivos estáticos de build)
