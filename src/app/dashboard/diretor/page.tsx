@@ -87,7 +87,7 @@ export default async function DiretorPage() {
     : 0
 
   return (
-    <div className="p-8 w-full mx-auto text-white flex flex-col gap-8 bg-gray-50 min-h-screen">
+    <div className="p-8 w-full mx-auto text-white flex flex-col gap-8 ">
       
       {/* CABEÇALHO */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-gray-200 pb-6">

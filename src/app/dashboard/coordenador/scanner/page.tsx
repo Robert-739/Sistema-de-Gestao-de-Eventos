@@ -3,16 +3,16 @@
 import { useEffect, useState, useRef } from "react"
 import { Html5QrcodeScanner } from "html5-qrcode"
 import { registrarPresencaQRCode } from "../actions"
-import { Camera, CheckCircle2, AlertTriangle, ArrowLeft, LogIn, LogOut } from "lucide-react"
+import { Camera, CheckCircle2, AlertTriangle, ArrowLeft, LogIn, LogOut, Loader2 } from "lucide-react"
 import Link from "next/link"
 
 export default function ScannerPage() {
   const [tipoPresenca, setTipoPresenca] = useState<"entrada" | "saida">("entrada")
   const [status, setStatus] = useState<{ success?: string; error?: string } | null>(null)
   const [scaneando, setScaneando] = useState(true)
+  const [cameraIniciada, setCameraIniciada] = useState(false) 
   
   const scannerRef = useRef<Html5QrcodeScanner | null>(null)
-  // useRef para manter o tipoPresenca sempre atualizado dentro do callback do scanner
   const tipoPresencaRef = useRef(tipoPresenca)
 
   // Sincroniza o ref sempre que o estado mudar
@@ -45,7 +45,6 @@ export default function ScannerPage() {
 
           setStatus({ success: "Processando código..." })
 
-          // Usa o valor do ref, que sempre tem o estado mais recente (entrada ou saida)
           const resultado = await registrarPresencaQRCode(decodedText, tipoPresencaRef.current)
           
           if (resultado.error) {
@@ -58,6 +57,16 @@ export default function ScannerPage() {
           // Ignora erros contínuos de busca
         }
       )
+
+      const verificarVideo = setInterval(() => {
+        const videoElement = document.querySelector("#reader video")
+        if (videoElement) {
+          setCameraIniciada(true)
+          clearInterval(verificarVideo)
+        }
+      }, 300)
+
+      return () => clearInterval(verificarVideo)
     }
 
     return () => {
@@ -69,9 +78,10 @@ export default function ScannerPage() {
           .catch((err: unknown) => console.error("Erro ao limpar scanner", err))
       }
     }
-  }, [scaneando]) // Roda apenas quando o scanner for resetado
+  }, [scaneando]) 
 
   const resetarScanner = () => {
+    setCameraIniciada(false) // Mudança para cá: Reseta o carregamento de forma segura antes do useEffect rodar
     setStatus(null)
     setScaneando(true)
   }
@@ -113,8 +123,50 @@ export default function ScannerPage() {
         {/* Container do Scanner da Câmera */}
         <div className="overflow-hidden rounded-xl bg-gray-900 border border-gray-700 relative flex flex-col items-center justify-center min-h-[300px]">
           {scaneando ? (
-            /* Mantemos o id fixo sem trocar a key, a câmera nunca desliga ao clicar nos botões! */
-            <div id="reader" className="w-full text-black bg-white" />
+            <div className="relative w-full min-h-[300px] flex items-center justify-center">
+              
+              {/* TELA DE SKELETON LOADING */}
+              {!cameraIniciada && (
+                <div className="absolute inset-0 bg-gray-900 z-10 flex flex-col items-center justify-center gap-3 p-6 text-center">
+                  <div className="p-3 bg-gray-800 rounded-full text-yellow-500 animate-pulse">
+                    <Loader2 size={24} className="animate-spin text-yellow-400" />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <p className="text-xs font-bold text-gray-200">Acessando câmera...</p>
+                    <p className="text-[11px] text-gray-400 max-w-[220px]">
+                      Aguardando inicialização do dispositivo ou permissão do navegador.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <style jsx global>{`
+                #reader {
+                  border: none !important;
+                  width: 100% !important;
+                }
+                #reader img {
+                  display: none !important;
+                }
+                #reader__dashboard_section_csr {
+                  padding: 12px !important;
+                  display: flex;
+                  justify-content: center;
+                }
+                #reader__dashboard_section_csr button {
+                  background-color: #3b82f6 !important;
+                  color: white !important;
+                  border: none !important;
+                  padding: 8px 16px !important;
+                  border-radius: 8px !important;
+                  font-size: 12px !important;
+                  font-weight: bold !important;
+                  cursor: pointer !important;
+                }
+              `}</style>
+
+              <div id="reader" className="w-full text-black bg-gray-900" />
+            </div>
           ) : (
             <div className="p-6 text-center flex flex-col items-center justify-center">
               {status?.error ? (

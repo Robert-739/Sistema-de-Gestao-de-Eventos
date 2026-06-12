@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import Link from "next/link"
-import { Calendar, Plus, Clock, Users, Award, User, ArrowRight } from "lucide-react"
+import { Calendar, Plus, Clock, Users, Award, User, ArrowRight, QrCode } from "lucide-react"
 import { eventos } from "@/generated/prisma"
 
 // Função para buscar os eventos direto no servidor (Server Component)
@@ -34,7 +34,7 @@ export default async function DashboardCoordenadorPage() {
           
           <Link 
             href="/dashboard/coordenador/novo-evento"
-            className="inline-flex items-center justify-center gap-2 bg-yellow-300 hover:bg-yellow-700 text-white font-semibold px-4 py-2.5 rounded-xl text-sm transition-all shadow-sm active:scale-[0.98]"
+            className="inline-flex items-center justify-center gap-2 bg-yellow-300 hover:bg-yellow-400 text-gray-900 font-semibold px-4 py-2.5 rounded-xl text-sm transition-all shadow-sm active:scale-[0.98]"
           >
             <Plus size={18} />
             Criar Evento
@@ -74,7 +74,7 @@ export default async function DashboardCoordenadorPage() {
                     className="bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-all flex flex-col overflow-hidden group"
                   >
                     {/* Topo do Card - Substitui o Banner por um visual gradiente limpo */}
-                    <div className="h-3 bg-gradient-to-r from-yellow-300 to-yellow-800 w-full" />
+                    <div className="h-3 bg-gradient-to-r from-yellow-300 to-yellow-600 w-full" />
                     
                     {/* Conteúdo do Card */}
                     <div className="p-5 flex flex-col flex-1">
@@ -115,14 +115,21 @@ export default async function DashboardCoordenadorPage() {
 
                       {/* Ações do Card */}
                       <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
-                        <button className="text-xs font-semibold text-gray-500 hover:text-gray-700 px-2 py-1 rounded transition-colors">
+                        <Link 
+                          href={`/dashboard/coordenador/editar-evento/${evento.id_evento}`}
+                          className="text-xs font-semibold text-gray-500 hover:text-gray-700 px-2 py-1 rounded transition-colors"
+                        >
                           Editar
-                        </button>
+                        </Link>
                         
-                        {/* Esse botão futuramente vai abrir o leitor de QR Code para este evento específico */}
-                        <button className="bg-gray-900 hover:bg-black text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all active:scale-95">
+                        {/* BOTÃO ATUALIZADO: Redireciona para o scanner passando o ID do evento na URL */}
+                        <Link 
+                          href={`/dashboard/coordenador/scanner?eventoId=${evento.id_evento}`}
+                          className="inline-flex items-center gap-1.5 bg-gray-900 hover:bg-black text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all active:scale-95"
+                        >
+                          <QrCode size={13} />
                           Escanear Presença
-                        </button>
+                        </Link>
                       </div>
 
                     </div>

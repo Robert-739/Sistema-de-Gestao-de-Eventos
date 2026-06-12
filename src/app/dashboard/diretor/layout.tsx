@@ -1,10 +1,10 @@
 import Link from "next/link"
-import { LayoutDashboard, CalendarPlus, QrCode, LogOut, GraduationCap } from "lucide-react"
+import { LayoutDashboard, LogOut, GraduationCap, UserPlus } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 
-export default async function CoordenadorLayout({
+export default async function DiretorLayout({
   children,
 }: {
   children: React.ReactNode
@@ -13,7 +13,7 @@ export default async function CoordenadorLayout({
   const cookieStore = await cookies()
   const usuarioId = cookieStore.get("usuario_id")?.value || ""
 
-  // 2. Busca o nome e o e-mail real do coordenador no banco usando o ID do cookie
+  // 2. Busca o nome e o e-mail real do diretor no banco usando o ID do cookie
   const usuario = await prisma.usuarios.findUnique({
     where: {
       id_usuario: Number(usuarioId) || 0,
@@ -24,17 +24,17 @@ export default async function CoordenadorLayout({
     }
   })
 
-  // Fallbacks seguros idênticos aos anteriores caso não encontre no banco
-  const nomeUsuario = usuario?.nome || "Coordenador"
-  const emailUsuario = usuario?.email || "coordenador@einstein.com"
+  // Fallbacks seguros caso não encontre no banco
+  const nomeUsuario = usuario?.nome || "Diretor"
+  const emailUsuario = usuario?.email || "diretor@einstein.com"
 
-  // 3. Função para gerar as iniciais do avatar baseadas no nome real
+  // 3. Função para gerar as iniciais do avatar
   const obtenerIniciais = (nome: string) => {
     const partes = nome.trim().split(" ")
     if (partes.length >= 2) {
       return `${partes[0][0]}${partes[partes.length - 1][0]}`.toUpperCase()
     }
-    return partes[0] ? partes[0][0].toUpperCase() : "CO"
+    return partes[0] ? partes[0][0].toUpperCase() : "DI"
   }
 
   const iniciais = obtenerIniciais(nomeUsuario)
@@ -42,7 +42,7 @@ export default async function CoordenadorLayout({
   return (
     <div className="flex min-h-screen bg-gray-50 text-black">
       
-      {/* SIDEBAR FIXA */}
+      {/* SIDEBAR FIXA DO DIRETOR */}
       <aside className="w-64 bg-slate-900 text-white flex flex-col justify-between p-5 border-r border-slate-800 shrink-0 hidden md:flex">
         <div>
           {/* Logo / Nome do Sistema */}
@@ -51,43 +51,35 @@ export default async function CoordenadorLayout({
               <GraduationCap size={20} />
             </div>
             <span className="font-bold text-sm tracking-wide bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
-              CheckIn Acadêmico
+              Direção Executiva
             </span>
           </div>
 
           {/* Links de Navegação */}
           <nav className="flex flex-col gap-1">
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-2 mb-2">
-              Navegação
+              Estratégico
             </span>
 
             <Link 
-              href="/dashboard/coordenador" 
+              href="/dashboard/diretor" 
               className="flex items-center gap-3 px-3 py-2.5 text-xs font-semibold rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white transition-all group"
             >
               <LayoutDashboard size={16} className="text-slate-400 group-hover:text-yellow-500 transition-colors" />
-              Painel Geral
+              Painel do Diretor
             </Link>
 
             <Link 
-              href="/dashboard/coordenador/novo-evento" 
+              href="/dashboard/diretor/cadastrar-coordenador" 
               className="flex items-center gap-3 px-3 py-2.5 text-xs font-semibold rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white transition-all group"
             >
-              <CalendarPlus size={16} className="text-slate-400 group-hover:text-yellow-500 transition-colors" />
-              Criar Novo Evento
-            </Link>
-
-            <Link 
-              href="/dashboard/coordenador/scanner" 
-              className="flex items-center gap-3 px-3 py-2.5 text-xs font-semibold rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white transition-all group"
-            >
-              <QrCode size={16} className="text-slate-400 group-hover:text-yellow-500 transition-colors" />
-              Escanear QR Code
+              <UserPlus size={16} className="text-slate-400 group-hover:text-yellow-500 transition-colors" />
+              Novo Coordenador
             </Link>
           </nav>
         </div>
 
-        {/* Rodapé da Sidebar (Perfil / Sair - AGORA DINÂMICO E CORRIGIDO) */}
+        {/* Rodapé da Sidebar (Perfil / Sair) */}
         <div className="border-t border-slate-800 pt-4 flex flex-col gap-3">
           <div className="flex items-center gap-2.5 px-2">
             <div className="w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center text-xs font-bold text-white uppercase shrink-0">
@@ -124,21 +116,20 @@ export default async function CoordenadorLayout({
         </div>
       </aside>
 
-      {/* CONTEÚDO PRINCIPAL */}
+      {/* CONTEÚDO PRINCIPAL DO PAINEL */}
       <main className="flex-1 overflow-y-auto max-h-screen">
         {/* Topbar para Mobile */}
         <header className="bg-slate-900 text-white p-4 flex items-center justify-between md:hidden shadow-md">
           <div className="flex items-center gap-2">
-            <GraduationCap size={18} className="text-blue-500" />
-            <span className="font-bold text-xs">CheckIn Acadêmico</span>
+            <GraduationCap size={18} className="text-yellow-500" />
+            <span className="font-bold text-xs">Painel da Direção</span>
           </div>
           <div className="flex gap-4 text-xs font-semibold">
-            <Link href="/dashboard/coordenador" className="text-slate-300 hover:text-white">Painel</Link>
-            <Link href="/dashboard/coordenador/scanner" className="bg-blue-600 px-2.5 py-1 rounded-lg text-[11px] text-white">Scanner</Link>
+            <Link href="/dashboard/diretor" className="text-slate-300 hover:text-white">Painel</Link>
           </div>
         </header>
 
-        {/* Renderiza a página atual */}
+        {/* Renderiza a página do Diretor */}
         <div className="w-full">
           {children}
         </div>
