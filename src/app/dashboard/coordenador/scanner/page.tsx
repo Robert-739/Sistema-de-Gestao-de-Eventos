@@ -27,13 +27,23 @@ export default function ScannerPage() {
     async function inicializarScanner() {
       if (!scaneando) return
 
+      // CRUCIAL: Limpa qualquer lixo ou tags de vídeo antigas deixadas no DOM pelo Next.js
+      const container = document.getElementById("reader")
+      if (container) {
+        container.innerHTML = "" 
+      }
+
       // Cria a instância isolada no escopo atual deste efeito
       scannerAtivo = new Html5QrcodeScanner(
         "reader",
         { 
           fps: 10,             
           qrbox: { width: 250, height: 250 }, 
-          aspectRatio: 1.0
+          aspectRatio: 1.0,
+          // Força a não lembrar da última câmera (evita travar tentando achar IDs antigos)
+          rememberLastUsedCamera: false,
+          // Configura para priorizar a câmera traseira em dispositivos móveis
+          supportedScanTypes: [0] 
         },
         /* verbose= */ false
       )
@@ -89,11 +99,15 @@ export default function ScannerPage() {
       
       if (scannerAtivo) {
         // Força a liberação assíncrona do hardware da câmera no navegador antes de anular as referências
-        scannerAtivo.clear()
-          .then(() => {
-            scannerRef.current = null
-          })
-          .catch((err: unknown) => console.error("Erro ao limpar scanner no encerramento de efeito:", err))
+        try {
+          scannerAtivo.clear()
+            .then(() => {
+              scannerRef.current = null
+            })
+            .catch((err: unknown) => console.error("Erro ao limpar scanner no encerramento de efeito:", err))
+        } catch (e) {
+          console.error("Erro ao destruir scanner:", e)
+        }
       }
     }
   }, [scaneando]) 
