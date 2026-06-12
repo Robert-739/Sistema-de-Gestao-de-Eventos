@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useRef } from "react"
 import { Html5Qrcode } from "html5-qrcode"
-import { registrarPresencaQRCode } from "../actions"
 import { Camera, CheckCircle2, AlertTriangle, ArrowLeft, LogIn, LogOut, Loader2 } from "lucide-react"
 import Link from "next/link"
 
@@ -44,20 +43,27 @@ export default function ScannerPage() {
             const scannerParaParar = scannerRef.current
             scannerRef.current = null
             if (scannerParaParar) {
-              scannerParaParar.stop().catch(() => {
-              })
+              scannerParaParar.stop().catch(() => {})
             }
 
             setScaneando(false)
             setCameraIniciada(false)
             setStatus({ success: "Processando código..." })
 
-            registrarPresencaQRCode(decodedText, tipoPresencaRef.current)
-              .then((resultado) => {
-                if (resultado.error) {
-                  setStatus({ error: resultado.error })
+            fetch("/api/presenca", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                idInscricao: decodedText.trim(),
+                tipoPresenca: tipoPresencaRef.current,
+              }),
+            })
+              .then((res) => res.json())
+              .then((data) => {
+                if (data.error) {
+                  setStatus({ error: data.error })
                 } else {
-                  setStatus({ success: resultado.success })
+                  setStatus({ success: data.success })
                 }
                 processandoRef.current = false
               })
