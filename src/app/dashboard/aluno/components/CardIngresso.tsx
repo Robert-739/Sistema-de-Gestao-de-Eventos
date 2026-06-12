@@ -60,7 +60,8 @@ export function CardIngresso({ inscricao }: { inscricao: Inscricao }) {
               <div className="mt-3">
                 <a
                   href={`/api/certificado?id=${inscricao.id_inscricao}`}
-                  className="block w-full bg-white/90 hover:bg-emerald-700 text-gray-950 hover:text-white font-bold text-center py-2 rounded-xl text-xs transition-all shadow active:scale-95 animate-pulse"
+                  download={`certificado-${inscricao.id_inscricao}.pdf`}
+                  className="block w-full bg-white/90 hover:bg-emerald-700 text-gray-950 hover:text-white font-bold text-center py-2 rounded-xl text-xs transition-all shadow active:scale-95"
                 >
                   Baixar Meu Certificado
                 </a>
@@ -72,11 +73,10 @@ export function CardIngresso({ inscricao }: { inscricao: Inscricao }) {
             {/* Lixeira: desativada visualmente se tiver presença */}
             <button
               onClick={deletar}
-              className={`p-2 rounded-lg transition-colors ${
-                temPresenca
+              className={`p-2 rounded-lg transition-colors ${temPresenca
                   ? "text-black/30 cursor-not-allowed"
                   : "text-black hover:text-red-400"
-              }`}
+                }`}
               title={temPresenca ? "Não é possível cancelar após registrar presença" : "Cancelar inscrição"}
             >
               {temPresenca ? <ShieldCheck size={16} /> : <Trash2 size={16} />}

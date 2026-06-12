@@ -58,7 +58,7 @@ export default function ScannerPage() {
 
             setStatus({ success: "Processando código..." })
 
-            // Chamada segura para a API Route nativa (sem interferência no ciclo de vida do Next.js)
+            // Chamada segura para a API Route nativa enviando o nome esperado pelo backend
             try {
               const resposta = await fetch("/api/presenca", {
                 method: "POST",
@@ -66,7 +66,7 @@ export default function ScannerPage() {
                   "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                  decodedText: decodedText,
+                  idInscricao: decodedText, // CORRIGIDO: Agora batendo com o backend!
                   tipoPresenca: tipoPresencaRef.current
                 })
               })
@@ -100,7 +100,6 @@ export default function ScannerPage() {
 
       } catch (err) {
         console.error("Erro fatal ao ligar a câmera traseira:", err)
-        // Se falhar o acesso ao hardware, cancela o estado carregando
         setCameraIniciada(false)
         setStatus({ error: "Não foi possível acessar a câmera. Verifique as permissões." })
       }
@@ -108,7 +107,6 @@ export default function ScannerPage() {
 
     inicializarCameraPura()
 
-    // CLEANUP: Executado estritamente ao desmontar a página ou resetar
     return () => {
       if (verificarVideo) clearInterval(verificarVideo)
       
@@ -133,7 +131,6 @@ export default function ScannerPage() {
     <div className="min-h-screen bg-gray-100 text-white p-4 flex flex-col items-center justify-center">
       <div className="w-full max-w-md bg-gray-700 rounded-2xl p-6 border border-white shadow-xl">
         
-        {/* Botão de Voltar */}
         <Link href="/dashboard/coordenador" className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-white mb-6 transition-colors">
           <ArrowLeft size={14} /> Voltar ao Painel
         </Link>
@@ -145,7 +142,6 @@ export default function ScannerPage() {
           <p className="text-xs text-gray-400 mt-1">Utilize a câmera do aparelho para escanear o QR Code do ingresso do aluno</p>
         </div>
 
-        {/* Chave de Seleção: Entrada ou Saída */}
         {scaneando && (
           <div className="grid grid-cols-2 gap-2 bg-gray-900 p-1 rounded-xl mb-6 border border-gray-700">
             <button
@@ -163,12 +159,10 @@ export default function ScannerPage() {
           </div>
         )}
 
-        {/* Container do Scanner da Câmera */}
         <div className="overflow-hidden rounded-xl bg-gray-900 border border-gray-700 relative flex flex-col items-center justify-center min-h-[300px]">
           {scaneando ? (
             <div className="relative w-full min-h-[300px] flex items-center justify-center">
               
-              {/* TELA DE SKELETON LOADING */}
               {!cameraIniciada && (
                 <div className="absolute inset-0 bg-gray-900 z-10 flex flex-col items-center justify-center gap-3 p-6 text-center">
                   <div className="p-3 bg-gray-800 rounded-full text-yellow-500 animate-pulse">
@@ -183,7 +177,6 @@ export default function ScannerPage() {
                 </div>
               )}
 
-              {/* Estilos CSS embutidos para ajustar as tags internas geradas dinamicamente pela lib */}
               <style jsx global>{`
                 #reader {
                   border: none !important;
@@ -200,7 +193,6 @@ export default function ScannerPage() {
               <div id="reader" className="w-full text-black bg-gray-900" />
             </div>
           ) : (
-            // Feedback Visual de Sucesso ou Erro pós-Scan
             <div className="p-6 text-center flex flex-col items-center justify-center">
               {status?.error ? (
                 <>
