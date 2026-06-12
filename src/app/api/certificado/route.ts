@@ -141,9 +141,6 @@ export async function GET(request: NextRequest) {
         .fontSize(14.5)
         .fillColor(textoSuave)
         .text(`cumprindo uma carga horária total de ${cargaHoraria} horas.`, { align: "center" })
-        .font("Custom-Bold")
-        .fillColor(azulMarinho)
-        .text(`${cargaHoraria} horas.`, { continued: false })
 
       doc.moveDown(3.5)
       const currentY = doc.y
@@ -167,15 +164,20 @@ export async function GET(request: NextRequest) {
         .fontSize(9)
         .fillColor(douradoNobre)
         .text("ORGANIZAÇÃO ACADÊMICA", { align: "center" })
+
+      // 🔥 CORREÇÃO CRÍTICA AQUI: Finaliza o documento para gerar o buffer!
+      doc.end()
     })
 
     const nomeArquivo = `certificado-evento-${inscricao.id_inscricao}.pdf`
 
+    // Adicionado Cache-Control para evitar downloads travados no mobile
     return new NextResponse(new Uint8Array(pdfBuffer), {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="${nomeArquivo}"`
+        "Content-Disposition": `attachment; filename="${nomeArquivo}"`,
+        "Cache-Control": "no-store, max-age=0"
       }
     })
 
