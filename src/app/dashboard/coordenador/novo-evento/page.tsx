@@ -1,6 +1,6 @@
 "use client"
 
-import { useActionState } from "react"
+import { useActionState, useState } from "react"
 import { cadastrarEvento } from "../actions"
 import { Calendar, Clock, Users, Award, FileText, AlignLeft, User } from "lucide-react"
 
@@ -8,6 +8,35 @@ const initialState = { error: null, success: false }
 
 export default function NovoEventoPage() {
   const [state, formAction, isPending] = useActionState(cadastrarEvento, initialState)
+
+  // Estados controlados para capturar os valores e calcular as horas automaticamente
+  const [dataInicio, setDataInicio] = useState("")
+  const [dataFim, setDataFim] = useState("")
+  const [horaInicio, setHoraInicio] = useState("")
+  const [horaFim, setHoraFim] = useState("")
+  
+  // Estado para quando o usuário alterar as horas manualmente
+  const [cargaHorariaManual, setCargaHorariaManual] = useState<number | null>(null)
+
+  // OBRIGATORIEDADE CLIENT-SIDE: Gera a data atual no formato YYYY-MM-DD para travar o calendário
+  const hojeMinimo = new Date().toISOString().split("T")[0]
+
+  // CÁLCULO EM TEMPO DE RENDERIZAÇÃO: Calcula a diferença apenas se todos os campos estiverem preenchidos
+  let cargaHorariaCalculada = 1
+  if (dataInicio && dataFim && horaInicio && horaFim) {
+    const dataHoraInicio = new Date(`${dataInicio}T${horaInicio}`)
+    const dataHoraFim = new Date(`${dataFim}T${horaFim}`)
+    
+    const diferencaMs = dataHoraFim.getTime() - dataHoraInicio.getTime()
+    
+    if (diferencaMs > 0) {
+      // Converte milissegundos em horas (arredondando para cima)
+      cargaHorariaCalculada = Math.ceil(diferencaMs / (1000 * 60 * 60))
+    }
+  }
+
+  // Define qual valor será renderizado no input e enviado pelo formulário
+  const cargaHorariaFinal = cargaHorariaManual !== null ? cargaHorariaManual : cargaHorariaCalculada
 
   return (
     <div className="p-6 flex items-center justify-center text-black">
@@ -78,14 +107,30 @@ export default function NovoEventoPage() {
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-semibold text-gray-700">Data de Início</label>
               <input 
-                name="data_inicio" type="date" required
+                name="data_inicio" 
+                type="date" 
+                value={dataInicio}
+                onChange={(e) => {
+                  setDataInicio(e.target.value)
+                  setCargaHorariaManual(null) // Reseta alteração manual para recalcular automático
+                }}
+                min={hojeMinimo}
+                required
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-yellow-300 transition-all text-sm" 
               />
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-semibold text-gray-700">Data de Término</label>
               <input 
-                name="data_fim" type="date" required
+                name="data_fim" 
+                type="date" 
+                value={dataFim}
+                onChange={(e) => {
+                  setDataFim(e.target.value)
+                  setCargaHorariaManual(null) // Reseta alteração manual para recalcular automático
+                }}
+                min={dataInicio || hojeMinimo} // Impede data final menor que a de início
+                required
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-yellow-300 transition-all text-sm" 
               />
             </div>
@@ -98,7 +143,14 @@ export default function NovoEventoPage() {
               <div className="relative">
                 <Clock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input 
-                  name="hora_inicio" type="time" required
+                  name="hora_inicio" 
+                  type="time" 
+                  value={horaInicio}
+                  onChange={(e) => {
+                    setHoraInicio(e.target.value)
+                    setCargaHorariaManual(null)
+                  }}
+                  required
                   className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-yellow-300 transition-all text-sm" 
                 />
               </div>
@@ -108,7 +160,14 @@ export default function NovoEventoPage() {
               <div className="relative">
                 <Clock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input 
-                  name="hora_fim" type="time" required
+                  name="hora_fim" 
+                  type="time" 
+                  value={horaFim}
+                  onChange={(e) => {
+                    setHoraFim(e.target.value)
+                    setCargaHorariaManual(null)
+                  }}
+                  required
                   className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-yellow-300 transition-all text-sm" 
                 />
               </div>
@@ -128,12 +187,19 @@ export default function NovoEventoPage() {
               </div>
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-semibold text-gray-700">Horas Complementares (Qtd)</label>
+              <label className="text-sm font-semibold text-gray-700">
+                Horas Complementares <span className="text-blue-600 font-normal text-xs">(Automático)</span>
+              </label>
               <div className="relative">
                 <Award size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input 
-                  name="carga_horaria" type="number" min={1} required placeholder="Ex: 4"
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-yellow-300 transition-all text-sm" 
+                  name="carga_horaria" 
+                  type="number" 
+                  min={1} 
+                  required 
+                  value={cargaHorariaFinal}
+                  onChange={(e) => setCargaHorariaManual(Number(e.target.value))} // Dá liberdade para mudar manualmente se necessário
+                  className="w-full pl-10 pr-4 py-2.5 border border-amber-200 bg-amber-50 font-medium rounded-xl outline-none focus:ring-2 focus:ring-yellow-300 transition-all text-sm text-black" 
                 />
               </div>
             </div>

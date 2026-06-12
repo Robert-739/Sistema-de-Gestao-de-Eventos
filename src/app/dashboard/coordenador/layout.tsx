@@ -24,11 +24,9 @@ export default async function CoordenadorLayout({
     }
   })
 
-  // Fallbacks seguros idênticos aos anteriores caso não encontre no banco
   const nomeUsuario = usuario?.nome || "Coordenador"
   const emailUsuario = usuario?.email || "coordenador@einstein.com"
 
-  // 3. Função para gerar as iniciais do avatar baseadas no nome real
   const obtenerIniciais = (nome: string) => {
     const partes = nome.trim().split(" ")
     if (partes.length >= 2) {
@@ -39,13 +37,21 @@ export default async function CoordenadorLayout({
 
   const iniciais = obtenerIniciais(nomeUsuario)
 
+  // Server Action compartilhada para o logout
+  async function fazerLogout() {
+    "use server"
+    const cookieStore = await cookies()
+    cookieStore.delete("usuario_id")
+    cookieStore.delete("usuario_perfil")
+    redirect("/login")
+  }
+
   return (
     <div className="flex min-h-screen bg-gray-50 text-black">
       
       {/* SIDEBAR FIXA */}
       <aside className="w-64 bg-slate-900 text-white flex flex-col justify-between p-5 border-r border-slate-800 shrink-0 hidden md:flex">
         <div>
-          {/* Logo / Nome do Sistema */}
           <div className="flex items-center gap-2.5 px-2 py-4 border-b border-slate-800 mb-6">
             <div className="bg-yellow-500 p-1.5 rounded-lg text-white">
               <GraduationCap size={20} />
@@ -55,7 +61,6 @@ export default async function CoordenadorLayout({
             </span>
           </div>
 
-          {/* Links de Navegação */}
           <nav className="flex flex-col gap-1">
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-2 mb-2">
               Navegação
@@ -87,7 +92,6 @@ export default async function CoordenadorLayout({
           </nav>
         </div>
 
-        {/* Rodapé da Sidebar (Perfil / Sair - AGORA DINÂMICO E CORRIGIDO) */}
         <div className="border-t border-slate-800 pt-4 flex flex-col gap-3">
           <div className="flex items-center gap-2.5 px-2">
             <div className="w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center text-xs font-bold text-white uppercase shrink-0">
@@ -103,16 +107,7 @@ export default async function CoordenadorLayout({
             </div>
           </div>
 
-          {/* FORMULÁRIO COM SERVER ACTION PARA FAZER LOGOUT REAL NO SERVIDOR */}
-          <form
-            action={async () => {
-              "use server"
-              const cookieStore = await cookies()
-              cookieStore.delete("usuario_id")
-              cookieStore.delete("usuario_perfil")
-              redirect("/login")
-            }}
-          >
+          <form action={fazerLogout}>
             <button 
               type="submit"
               className="w-full flex items-center gap-3 px-3 py-2 text-xs font-semibold text-red-400 hover:bg-red-500/10 rounded-xl transition-all text-left"
@@ -130,15 +125,21 @@ export default async function CoordenadorLayout({
         <header className="bg-slate-900 text-white p-4 flex items-center justify-between md:hidden shadow-md">
           <div className="flex items-center gap-2">
             <GraduationCap size={18} className="text-blue-500" />
-            <span className="font-bold text-xs">CheckIn Acadêmico</span>
+            <span className="font-bold text-xs">CheckIn</span>
           </div>
-          <div className="flex gap-4 text-xs font-semibold">
+          <div className="flex items-center gap-3 text-xs font-semibold">
             <Link href="/dashboard/coordenador" className="text-slate-300 hover:text-white">Painel</Link>
-            <Link href="/dashboard/coordenador/scanner" className="bg-blue-600 px-2.5 py-1 rounded-lg text-[11px] text-white">Scanner</Link>
+            <Link href="/dashboard/coordenador/scanner" className="bg-blue-600 px-2 py-0.5 rounded-md text-[11px] text-white">Scanner</Link>
+            
+            {/* BOTÃO SAIR NO CELULAR */}
+            <form action={fazerLogout}>
+              <button type="submit" className="text-red-400 hover:text-red-500 flex items-center gap-0.5 ml-1">
+                <LogOut size={13} /> Sair
+              </button>
+            </form>
           </div>
         </header>
 
-        {/* Renderiza a página atual */}
         <div className="w-full">
           {children}
         </div>

@@ -53,12 +53,13 @@ export async function logarUsuario(prevState: LoginState | null, formData: FormD
       return { error: "E-mail ou senha incorretos." };
     }
 
-    // Salva ID e PERFIL nos cookies (necessário para o middleware funcionar)
+    // Configura ID e PERFIL nos cookies
     const cookieStore = await cookies();
     const cookieOpcoes = {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      maxAge: 60 * 60 * 24, // 24 horas
+      // maxAge REMOVIDO: Agora o cookie se torna um "Session Cookie" 
+      // e é deletado automaticamente quando o navegador ou aba fecha.
       path: "/",
     };
 

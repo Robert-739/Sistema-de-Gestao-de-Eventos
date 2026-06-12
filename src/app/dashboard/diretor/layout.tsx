@@ -9,11 +9,9 @@ export default async function DiretorLayout({
 }: {
   children: React.ReactNode
 }) {
-  // 1. Acessa os cookies de forma assíncrona no servidor
   const cookieStore = await cookies()
   const usuarioId = cookieStore.get("usuario_id")?.value || ""
 
-  // 2. Busca o nome e o e-mail real do diretor no banco usando o ID do cookie
   const usuario = await prisma.usuarios.findUnique({
     where: {
       id_usuario: Number(usuarioId) || 0,
@@ -24,11 +22,9 @@ export default async function DiretorLayout({
     }
   })
 
-  // Fallbacks seguros caso não encontre no banco
   const nomeUsuario = usuario?.nome || "Diretor"
   const emailUsuario = usuario?.email || "diretor@einstein.com"
 
-  // 3. Função para gerar as iniciais do avatar
   const obtenerIniciais = (nome: string) => {
     const partes = nome.trim().split(" ")
     if (partes.length >= 2) {
@@ -39,13 +35,20 @@ export default async function DiretorLayout({
 
   const iniciais = obtenerIniciais(nomeUsuario)
 
+  async function fazerLogout() {
+    "use server"
+    const cookieStore = await cookies()
+    cookieStore.delete("usuario_id")
+    cookieStore.delete("usuario_perfil")
+    redirect("/login")
+  }
+
   return (
     <div className="flex min-h-screen bg-gray-50 text-black">
       
       {/* SIDEBAR FIXA DO DIRETOR */}
       <aside className="w-64 bg-slate-900 text-white flex flex-col justify-between p-5 border-r border-slate-800 shrink-0 hidden md:flex">
         <div>
-          {/* Logo / Nome do Sistema */}
           <div className="flex items-center gap-2.5 px-2 py-4 border-b border-slate-800 mb-6">
             <div className="bg-yellow-500 p-1.5 rounded-lg text-white">
               <GraduationCap size={20} />
@@ -55,7 +58,6 @@ export default async function DiretorLayout({
             </span>
           </div>
 
-          {/* Links de Navegação */}
           <nav className="flex flex-col gap-1">
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-2 mb-2">
               Estratégico
@@ -79,7 +81,6 @@ export default async function DiretorLayout({
           </nav>
         </div>
 
-        {/* Rodapé da Sidebar (Perfil / Sair) */}
         <div className="border-t border-slate-800 pt-4 flex flex-col gap-3">
           <div className="flex items-center gap-2.5 px-2">
             <div className="w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center text-xs font-bold text-white uppercase shrink-0">
@@ -95,16 +96,7 @@ export default async function DiretorLayout({
             </div>
           </div>
 
-          {/* FORMULÁRIO COM SERVER ACTION PARA FAZER LOGOUT REAL NO SERVIDOR */}
-          <form
-            action={async () => {
-              "use server"
-              const cookieStore = await cookies()
-              cookieStore.delete("usuario_id")
-              cookieStore.delete("usuario_perfil")
-              redirect("/login")
-            }}
-          >
+          <form action={fazerLogout}>
             <button 
               type="submit"
               className="w-full flex items-center gap-3 px-3 py-2 text-xs font-semibold text-red-400 hover:bg-red-500/10 rounded-xl transition-all text-left"
@@ -122,14 +114,20 @@ export default async function DiretorLayout({
         <header className="bg-slate-900 text-white p-4 flex items-center justify-between md:hidden shadow-md">
           <div className="flex items-center gap-2">
             <GraduationCap size={18} className="text-yellow-500" />
-            <span className="font-bold text-xs">Painel da Direção</span>
+            <span className="font-bold text-xs">Direção</span>
           </div>
-          <div className="flex gap-4 text-xs font-semibold">
+          <div className="flex items-center gap-4 text-xs font-semibold">
             <Link href="/dashboard/diretor" className="text-slate-300 hover:text-white">Painel</Link>
+            
+            {/* BOTÃO SAIR NO CELULAR */}
+            <form action={fazerLogout}>
+              <button type="submit" className="text-red-400 hover:text-red-500 flex items-center gap-0.5">
+                <LogOut size={13} /> Sair
+              </button>
+            </form>
           </div>
         </header>
 
-        {/* Renderiza a página do Diretor */}
         <div className="w-full">
           {children}
         </div>
