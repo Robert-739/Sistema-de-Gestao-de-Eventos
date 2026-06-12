@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { QRCodeSVG } from "qrcode.react"
-import { Calendar, Clock, QrCode, X, Trash2 } from "lucide-react"
+import { QrCode, X, Trash2, ShieldCheck } from "lucide-react"
 import { cancelarInscricao } from "../actions"
 
 interface Evento {
@@ -20,7 +20,15 @@ interface Inscricao {
 export function CardIngresso({ inscricao }: { inscricao: Inscricao }) {
   const [modalAberto, setModalAberto] = useState(false)
 
+  // CORRIGIDO: presença registrada bloqueia cancelamento
+  const temPresenca = inscricao.presenca_entrada === true || inscricao.presenca_saida === true
+  const certificadoDisponivel = inscricao.presenca_entrada === true && inscricao.presenca_saida === true
+
   const deletar = async () => {
+    if (temPresenca) {
+      alert("Não é possível cancelar: sua presença neste evento já foi registrada.")
+      return
+    }
     if (confirm("Deseja realmente cancelar sua inscrição neste evento?")) {
       const res = await cancelarInscricao(inscricao.id_inscricao)
       if (res?.error) alert(res.error)
@@ -32,7 +40,7 @@ export function CardIngresso({ inscricao }: { inscricao: Inscricao }) {
       <div className="bg-gradient-to-br from-yellow-200 to-yellow-600 text-white p-5 rounded-2xl shadow-sm relative overflow-hidden group border border-gray-500">
         <div className="flex flex-col h-full justify-between">
           <div>
-            <span className="text-[9px] uppercase tracking-wider bg-white/70 text-gray-900  font-bold px-2 py-0.5 rounded-full">
+            <span className="text-[9px] uppercase tracking-wider bg-white/70 text-gray-900 font-bold px-2 py-0.5 rounded-full">
               Ingresso Confirmado
             </span>
             <h3 className="font-bold text-sm mt-2 line-clamp-1">{inscricao.eventos?.titulo}</h3>
@@ -47,8 +55,8 @@ export function CardIngresso({ inscricao }: { inscricao: Inscricao }) {
               </span>
             </div>
 
-            {/* Movido para cá: Botão de Certificado condicional fora do bloco de texto */}
-            {inscricao.presenca_entrada && inscricao.presenca_saida && (
+            {/* Botão de certificado — só aparece com presença completa */}
+            {certificadoDisponivel && (
               <div className="mt-3">
                 <a
                   href={`/api/certificado?id=${inscricao.id_inscricao}`}
@@ -61,12 +69,17 @@ export function CardIngresso({ inscricao }: { inscricao: Inscricao }) {
           </div>
 
           <div className="mt-6 pt-3 border-t border-white/10 flex items-center justify-between">
+            {/* Lixeira: desativada visualmente se tiver presença */}
             <button
               onClick={deletar}
-              className="p-2 text-black hover:text-red-400 rounded-lg transition-colors"
-              title="Cancelar inscrição"
+              className={`p-2 rounded-lg transition-colors ${
+                temPresenca
+                  ? "text-black/30 cursor-not-allowed"
+                  : "text-black hover:text-red-400"
+              }`}
+              title={temPresenca ? "Não é possível cancelar após registrar presença" : "Cancelar inscrição"}
             >
-              <Trash2 size={16} />
+              {temPresenca ? <ShieldCheck size={16} /> : <Trash2 size={16} />}
             </button>
 
             <button
@@ -81,7 +94,7 @@ export function CardIngresso({ inscricao }: { inscricao: Inscricao }) {
 
       {/* MODAL DO QR CODE */}
       {modalAberto && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white p-6 rounded-2xl max-w-sm w-full border border-gray-100 shadow-2xl relative text-center">
             <button
               onClick={() => setModalAberto(false)}

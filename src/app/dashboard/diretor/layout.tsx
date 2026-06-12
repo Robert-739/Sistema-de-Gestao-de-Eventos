@@ -10,11 +10,14 @@ export default async function DiretorLayout({
   children: React.ReactNode
 }) {
   const cookieStore = await cookies()
-  const usuarioId = cookieStore.get("usuario_id")?.value || ""
+  const usuarioId = cookieStore.get("usuario_id")?.value
+
+  // CORRIGIDO: redirect explícito se não tiver cookie, em vez de buscar id=0 no banco
+  if (!usuarioId) redirect("/login")
 
   const usuario = await prisma.usuarios.findUnique({
     where: {
-      id_usuario: Number(usuarioId) || 0,
+      id_usuario: Number(usuarioId),
     },
     select: {
       nome: true,
@@ -23,7 +26,7 @@ export default async function DiretorLayout({
   })
 
   const nomeUsuario = usuario?.nome || "Diretor"
-  const emailUsuario = usuario?.email || "diretor@einstein.com"
+  const emailUsuario = usuario?.email || ""  // CORRIGIDO: sem e-mail genérico hardcoded
 
   const obtenerIniciais = (nome: string) => {
     const partes = nome.trim().split(" ")
@@ -108,9 +111,8 @@ export default async function DiretorLayout({
         </div>
       </aside>
 
-      {/* CONTEÚDO PRINCIPAL DO PAINEL */}
+      {/* CONTEÚDO PRINCIPAL */}
       <main className="flex-1 overflow-y-auto max-h-screen">
-        {/* Topbar para Mobile */}
         <header className="bg-slate-900 text-white p-4 flex items-center justify-between md:hidden shadow-md">
           <div className="flex items-center gap-2">
             <GraduationCap size={18} className="text-yellow-500" />
@@ -118,8 +120,6 @@ export default async function DiretorLayout({
           </div>
           <div className="flex items-center gap-4 text-xs font-semibold">
             <Link href="/dashboard/diretor" className="text-slate-300 hover:text-white">Painel</Link>
-            
-            {/* BOTÃO SAIR NO CELULAR */}
             <form action={fazerLogout}>
               <button type="submit" className="text-red-400 hover:text-red-500 flex items-center gap-0.5">
                 <LogOut size={13} /> Sair

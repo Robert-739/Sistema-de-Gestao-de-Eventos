@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useRef } from "react"
-import { Html5QrcodeScanner } from "html5-qrcode"
+import { Html5Qrcode } from "html5-qrcode"
 import { registrarPresencaQRCode } from "../actions"
 import { Camera, CheckCircle2, AlertTriangle, ArrowLeft, LogIn, LogOut, Loader2 } from "lucide-react"
 import Link from "next/link"
@@ -10,110 +10,96 @@ export default function ScannerPage() {
   const [tipoPresenca, setTipoPresenca] = useState<"entrada" | "saida">("entrada")
   const [status, setStatus] = useState<{ success?: string; error?: string } | null>(null)
   const [scaneando, setScaneando] = useState(true)
-  const [cameraIniciada, setCameraIniciada] = useState(false) 
-  
-  const scannerRef = useRef<Html5QrcodeScanner | null>(null)
-  const tipoPresencaRef = useRef(tipoPresenca)
+  const [cameraIniciada, setCameraIniciada] = useState(false)
 
-  // Sincroniza o ref sempre que o estado mudar para que o callback assíncrono leia o valor correto
+  const scannerRef = useRef<Html5Qrcode | null>(null)
+  const tipoPresencaRef = useRef(tipoPresenca)
+  const processandoRef = useRef(false) // Evita processar dois QR codes ao mesmo tempo
+
   useEffect(() => {
     tipoPresencaRef.current = tipoPresenca
   }, [tipoPresenca])
 
   useEffect(() => {
-    let scannerAtivo: Html5QrcodeScanner | null = null
-    let verificarVideo: NodeJS.Timeout
+    if (!scaneando) return
 
-    async function inicializarScanner() {
-      if (!scaneando) return
+    let scanner: Html5Qrcode | null = null
 
-      // CRUCIAL: Limpa qualquer lixo ou tags de vídeo antigas deixadas no DOM pelo Next.js
-      const container = document.getElementById("reader")
-      if (container) {
-        container.innerHTML = "" 
-      }
-
-      // Cria a instância isolada no escopo atual deste efeito
-      scannerAtivo = new Html5QrcodeScanner(
-        "reader",
-        { 
-          fps: 10,             
-          qrbox: { width: 250, height: 250 }, 
-          aspectRatio: 1.0,
-          // Força a não lembrar da última câmera (evita travar tentando achar IDs antigos)
-          rememberLastUsedCamera: false,
-          // Configura para priorizar a câmera traseira em dispositivos móveis
-          supportedScanTypes: [0] 
-        },
-        /* verbose= */ false
-      )
-
-      scannerRef.current = scannerAtivo
-
+    async function iniciarCamera() {
       try {
-        scannerAtivo.render(
+        // Limpa o container antes de criar nova instância
+        const container = document.getElementById("reader")
+        if (container) container.innerHTML = ""
+
+        // Html5Qrcode abre a câmera DIRETAMENTE, sem tela intermediária
+        scanner = new Html5Qrcode("reader")
+        scannerRef.current = scanner
+
+        await scanner.start(
+          { facingMode: "environment" }, // câmera traseira no celular
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0,
+          },
           async (decodedText: string) => {
-            setScaneando(false) 
+            // Evita processar múltiplos frames do mesmo QR Code
+            if (processandoRef.current) return
+            processandoRef.current = true
+
+            setScaneando(false)
             setCameraIniciada(false)
-            
+
+            // Para a câmera imediatamente após leitura
             if (scannerRef.current) {
-              // Limpa de forma segura a instância assim que decodificar com sucesso
-              await scannerRef.current.clear().catch((e) => console.error("Erro ao limpar no sucesso:", e))
-              scannerRef.current = null
+              try {
+                await scannerRef.current.stop()
+                scannerRef.current = null
+              } catch (e) {
+                console.error("Erro ao parar scanner:", e)
+              }
             }
 
             setStatus({ success: "Processando código..." })
 
             const resultado = await registrarPresencaQRCode(decodedText, tipoPresencaRef.current)
-            
+
             if (resultado.error) {
               setStatus({ error: resultado.error })
             } else {
               setStatus({ success: resultado.success })
             }
+
+            processandoRef.current = false
           },
-          (_error: unknown) => {
-            // Ignora erros contínuos de varredura visual de frames
+          () => {
+            // Callback de erro por frame — ignorado intencionalmente (frames sem QR são normais)
           }
         )
 
-        // Monitora de forma segura a inserção do elemento de vídeo para remover a tela de carregamento
-        verificarVideo = setInterval(() => {
-          const videoElement = document.querySelector("#reader video")
-          if (videoElement) {
-            setCameraIniciada(true)
-            clearInterval(verificarVideo)
-          }
-        }, 300)
+        setCameraIniciada(true)
 
       } catch (err) {
-        console.error("Falha ao renderizar o scanner:", err)
+        console.error("Erro ao iniciar câmera:", err)
+        setCameraIniciada(false)
       }
     }
 
-    inicializarScanner()
+    iniciarCamera()
 
-    // MECANISMO DE LIMPEZA (Cleanup): Executado estritamente ao desmontar ou resetar o estado
+    // Cleanup: para a câmera ao sair da página ou ao resetar
     return () => {
-      if (verificarVideo) clearInterval(verificarVideo)
-      
-      if (scannerAtivo) {
-        // Força a liberação assíncrona do hardware da câmera no navegador antes de anular as referências
-        try {
-          scannerAtivo.clear()
-            .then(() => {
-              scannerRef.current = null
-            })
-            .catch((err: unknown) => console.error("Erro ao limpar scanner no encerramento de efeito:", err))
-        } catch (e) {
-          console.error("Erro ao destruir scanner:", e)
-        }
+      if (scanner) {
+        scanner.stop()
+          .then(() => { scannerRef.current = null })
+          .catch((err) => console.error("Erro ao parar câmera no cleanup:", err))
       }
     }
-  }, [scaneando]) 
+  }, [scaneando])
 
   const resetarScanner = () => {
-    setCameraIniciada(false) 
+    processandoRef.current = false
+    setCameraIniciada(false)
     setStatus(null)
     setScaneando(true)
   }
@@ -121,7 +107,7 @@ export default function ScannerPage() {
   return (
     <div className="min-h-screen bg-gray-100 text-white p-4 flex flex-col items-center justify-center">
       <div className="w-full max-w-md bg-gray-700 rounded-2xl p-6 border border-white shadow-xl">
-        
+
         {/* Voltar */}
         <Link href="/dashboard/coordenador" className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-white mb-6 transition-colors">
           <ArrowLeft size={14} /> Voltar ao Painel
@@ -134,7 +120,7 @@ export default function ScannerPage() {
           <p className="text-xs text-gray-400 mt-1">Utilize a câmera do aparelho para escanear o QR Code do ingresso do aluno</p>
         </div>
 
-        {/* Chave de Seleção: Entrada ou Saída */}
+        {/* Seletor Entrada / Saída */}
         {scaneando && (
           <div className="grid grid-cols-2 gap-2 bg-gray-900 p-1 rounded-xl mb-6 border border-gray-700">
             <button
@@ -152,26 +138,27 @@ export default function ScannerPage() {
           </div>
         )}
 
-        {/* Container do Scanner da Câmera */}
+        {/* Container da Câmera */}
         <div className="overflow-hidden rounded-xl bg-gray-900 border border-gray-700 relative flex flex-col items-center justify-center min-h-[300px]">
           {scaneando ? (
             <div className="relative w-full min-h-[300px] flex items-center justify-center">
-              
-              {/* TELA DE SKELETON LOADING */}
+
+              {/* Loading enquanto câmera abre */}
               {!cameraIniciada && (
                 <div className="absolute inset-0 bg-gray-900 z-10 flex flex-col items-center justify-center gap-3 p-6 text-center">
-                  <div className="p-3 bg-gray-800 rounded-full text-yellow-500 animate-pulse">
+                  <div className="p-3 bg-gray-800 rounded-full">
                     <Loader2 size={24} className="animate-spin text-yellow-400" />
                   </div>
                   <div className="flex flex-col gap-1">
                     <p className="text-xs font-bold text-gray-200">Acessando câmera...</p>
                     <p className="text-[11px] text-gray-400 max-w-[220px]">
-                      Aguardando inicialização do dispositivo ou permissão do navegador.
+                      Aguarde a inicialização. Se solicitado, permita o acesso à câmera.
                     </p>
                   </div>
                 </div>
               )}
 
+              {/* Estilos para esconder elementos padrão do html5-qrcode */}
               <style jsx global>{`
                 #reader {
                   border: none !important;
@@ -180,24 +167,12 @@ export default function ScannerPage() {
                 #reader img {
                   display: none !important;
                 }
-                #reader__dashboard_section_csr {
-                  padding: 12px !important;
-                  display: flex;
-                  justify-content: center;
-                }
-                #reader__dashboard_section_csr button {
-                  background-color: #3b82f6 !important;
-                  color: white !important;
-                  border: none !important;
-                  padding: 8px 16px !important;
-                  border-radius: 8px !important;
-                  font-size: 12px !important;
-                  font-weight: bold !important;
-                  cursor: pointer !important;
+                #reader__scan_region {
+                  background: transparent !important;
                 }
               `}</style>
 
-              <div id="reader" className="w-full text-black bg-gray-900" />
+              <div id="reader" className="w-full bg-gray-900" />
             </div>
           ) : (
             <div className="p-6 text-center flex flex-col items-center justify-center">
@@ -212,7 +187,7 @@ export default function ScannerPage() {
                   <p className="text-sm font-semibold text-green-400">{status?.success}</p>
                 </>
               )}
-              
+
               <button
                 onClick={resetarScanner}
                 className="mt-6 bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2 rounded-xl text-xs transition-all active:scale-95"
