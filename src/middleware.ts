@@ -12,8 +12,7 @@ const permissoesPorRota = [
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // AJUSTE DE SEGURANÇA: Se a requisição for para a API ou arquivos de certificado, 
-  // deixa passar direto sem aplicar nenhuma regra de redirecionamento de tela.
+  // Se for requisição para a API ou contiver certificado, deixa passar direto
   if (pathname.startsWith("/api") || pathname.includes("certificado")) {
     return NextResponse.next();
   }
@@ -23,25 +22,21 @@ export function middleware(request: NextRequest) {
 
   const estaLogado = !!usuarioId && !!usuarioPerfil;
 
-  // 1. REGRA DE OURO: Se o usuário acessou a raiz limpa do site ("/")
-  // Nós ignoramos qualquer cookie antigo, limpamos eles e mandamos OBRIGATORIAMENTE para o login
+  // 1. REGRA DE OURO: Acessou a raiz limpa ("/")
   if (pathname === "/") {
     const resposta = NextResponse.redirect(new URL("/login", request.url));
     resposta.cookies.delete("usuario_id");
     resposta.cookies.delete("usuario_perfil");
     resposta.headers.set("Cache-Control", "no-store, max-age=0, must-revalidate");
-    return status;
+    return resposta; // CORRIGIDO AQUI (era return status)
   }
 
-  // 2. Se está tentando acessar as rotas públicas de login/cadastro diretamente
+  // 2. Rotas públicas (login/cadastro)
   if (rotasPublicas.some((rota) => pathname.startsWith(rota))) {
-    // Como você NÃO quer sessões salvas automáticas pulando o formulário,
-    // nós apenas removemos aquele redirecionamento antigo que jogava direto pro dashboard.
-    // Assim, se ele digitar "/login", ele vai ver e preencher o formulário sempre!
     return NextResponse.next();
   }
 
-  // 3. Se está numa rota protegida do painel
+  // 3. Rotas protegidas do painel
   if (pathname.startsWith("/dashboard")) {
     if (!estaLogado) {
       const resposta = NextResponse.redirect(new URL("/login", request.url));
@@ -51,7 +46,7 @@ export function middleware(request: NextRequest) {
 
     const regraRota = permissoesPorRota.find((item) => pathname.startsWith(item.prefixo));
 
-    // Se o perfil logado tentar invadir a rota de outro perfil, joga pro login deslogando ele
+    // Se o perfil tentar invadir rota alheia, desloga e joga pro login
     if (regraRota && usuarioPerfil !== regraRota.perfil) {
       const resposta = NextResponse.redirect(new URL("/login", request.url));
       resposta.cookies.delete("usuario_id");
@@ -65,6 +60,6 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Mantemos o mapeamento estrito das suas páginas visuais
+  // Mantemos o mapeamento estrito das páginas visuais
   matcher: ["/", "/dashboard/:path*", "/login", "/cadastro"],
 };
