@@ -1,29 +1,35 @@
 "use server"
 
 import { prisma } from "@/lib/prisma"
+import { cookies } from "next/headers"
 import { revalidatePath } from "next/cache"
+import { redirect } from "next/navigation"
 
-// Simulando o ID do aluno logado como 2 por enquanto (mude para um ID de aluno que exista no seu banco)
-const ID_ALUNO_LOGADO = 2 
+async function obterIdAluno(): Promise<number> {
+  const cookieStore = await cookies()
+  const idDoCookie = cookieStore.get("usuario_id")?.value
+  if (!idDoCookie) redirect("/login")
+  return Number(idDoCookie)
+}
 
 export async function inscreverNoEvento(idEvento: number) {
   try {
-    // 1. Verifica se o evento existe e se ainda tem vagas
+    const idAlunoLogado = await obterIdAluno()
+
     const evento = await prisma.eventos.findUnique({
       where: { id_evento: idEvento },
       include: { _count: { select: { inscricoes: true } } }
     })
 
     if (!evento) return { error: "Evento não encontrado." }
-    
+
     if (evento._count.inscricoes >= evento.vagas_limite) {
       return { error: "Infelizmente as vagas para este evento já esgotaram!" }
     }
 
-    // 2. Cria a inscrição no banco
     await prisma.inscricoes.create({
       data: {
-        id_aluno: ID_ALUNO_LOGADO,
+        id_aluno: idAlunoLogado,
         id_evento: idEvento,
         presenca_entrada: false,
         presenca_saida: false
@@ -36,11 +42,10 @@ export async function inscreverNoEvento(idEvento: number) {
   } catch (error: unknown) {
     console.error("Erro ao inscrever:", error)
 
-    // Verifica se o erro é um objeto e possui a propriedade 'code' (padrão do Prisma)
     if (
-      error && 
-      typeof error === "object" && 
-      "code" in error && 
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
       error.code === "P2002"
     ) {
       return { error: "Você já está inscrito neste evento!" }
@@ -52,6 +57,17 @@ export async function inscreverNoEvento(idEvento: number) {
 
 export async function cancelarInscricao(idInscricao: number) {
   try {
+    const idAlunoLogado = await obterIdAluno()
+
+    // Verifica se a inscrição pertence ao aluno logado antes de deletar
+    const inscricao = await prisma.inscricoes.findUnique({
+      where: { id_inscricao: idInscricao }
+    })
+
+    if (!inscricao || inscricao.id_aluno !== idAlunoLogado) {
+      return { error: "Inscrição não encontrada ou sem permissão." }
+    }
+
     await prisma.inscricoes.delete({
       where: { id_inscricao: idInscricao }
     })

@@ -1,19 +1,27 @@
 import { prisma } from "@/lib/prisma"
 import { cookies } from "next/headers"
-import { Calendar, Clock, Award, User, Ticket, QrCode } from "lucide-react"
+import { redirect } from "next/navigation"
+import { Calendar, Award, User, Ticket, QrCode, ChevronLeft, ChevronRight } from "lucide-react"
 import { BotaoInscricao } from "./components/BotaoInscricao"
 import { CardIngresso } from "./components/CardIngresso"
 
-async function obterDadosDoAluno() {
-  const cookieStore = await cookies();
-  const idDoCookie = cookieStore.get("usuario_id")?.value;
-  const idAlunoLogado = idDoCookie ? Number(idDoCookie) : 0;
+const EVENTOS_POR_PAGINA = 6
+
+async function obterDadosDoAluno(pagina: number) {
+  const cookieStore = await cookies()
+  const idDoCookie = cookieStore.get("usuario_id")?.value
+
+  if (!idDoCookie) redirect("/login")
+
+  const idAlunoLogado = Number(idDoCookie)
+
+  const totalEventos = await prisma.eventos.count()
 
   const todosEventos = await prisma.eventos.findMany({
-    include: {
-      inscricoes: true
-    },
-    orderBy: { data_inicio: "asc" }
+    include: { inscricoes: true },
+    orderBy: { data_inicio: "asc" },
+    skip: (pagina - 1) * EVENTOS_POR_PAGINA,
+    take: EVENTOS_POR_PAGINA,
   })
 
   const minhasInscricoes = await prisma.inscricoes.findMany({
@@ -22,16 +30,24 @@ async function obterDadosDoAluno() {
     orderBy: { data_inscricao: "desc" }
   })
 
-  return { todosEventos, minhasInscricoes, idAlunoLogado }
+  return { todosEventos, minhasInscricoes, idAlunoLogado, totalEventos }
 }
 
-export default async function DashboardAlunoPage() {
-  const { todosEventos, minhasInscricoes, idAlunoLogado } = await obterDadosDoAluno()
+export default async function DashboardAlunoPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ pagina?: string }>
+}) {
+  const params = await searchParams
+  const pagina = Math.max(1, Number(params.pagina) || 1)
+  const { todosEventos, minhasInscricoes, idAlunoLogado, totalEventos } = await obterDadosDoAluno(pagina)
+
+  const totalPaginas = Math.ceil(totalEventos / EVENTOS_POR_PAGINA)
 
   return (
     <div className="p-6 sm:p-8 text-black">
       <div className="max-w-6xl mx-auto">
-        
+
         {/* Header */}
         <div className="mb-8 pb-6 border-b border-gray-200">
           <h1 className="text-2xl font-bold text-gray-900">Portal do Aluno</h1>
@@ -44,32 +60,68 @@ export default async function DashboardAlunoPage() {
             <Calendar size={20} className="text-yellow-700" /> Eventos Disponíveis
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {todosEventos.map((evento) => {
-              const jaInscrito = evento.inscricoes.some(ins => ins.id_aluno === idAlunoLogado)
-              const dataFormatada = new Date(evento.data_inicio).toLocaleDateString("pt-BR")
-              const vagasRestantes = evento.vagas_limite - evento.inscricoes.length
+          {todosEventos.length === 0 ? (
+            <div className="bg-white border border-dashed border-gray-300 rounded-2xl p-8 text-center max-w-sm mx-auto">
+              <Calendar size={40} className="mx-auto text-gray-300 mb-3" />
+              <p className="text-sm text-gray-500">Nenhum evento disponível no momento.</p>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {todosEventos.map((evento) => {
+                  const jaInscrito = evento.inscricoes.some(ins => ins.id_aluno === idAlunoLogado)
+                  const dataFormatada = new Date(evento.data_inicio).toLocaleDateString("pt-BR")
+                  const vagasRestantes = evento.vagas_limite - evento.inscricoes.length
 
-              return (
-                <div key={evento.id_evento} className="bg-white border border-gray-100 rounded-2xl shadow-sm flex flex-col overflow-hidden">
-                  <div className="h-2 bg-gradient-to-r from-yellow-300 to-yellow-700 w-full" />
-                  <div className="p-5 flex flex-col flex-1">
-                    <h3 className="font-bold text-black mb-2 line-clamp-1">{evento.titulo}</h3>
-                    <p className="text-xs text-gray-500 line-clamp-3 mb-4 flex-1">{evento.descricao}</p>
-                    
-                    <div className="grid grid-cols-2 gap-2 border-t border-gray-50 pt-3 text-xs text-gray-500 mb-4">
-                      <div className="flex items-center gap-1"><User size={13} /> <span className="truncate">{evento.palestrante}</span></div>
-                      <div className="flex items-center gap-1 justify-end"><Calendar size={13} /> <span>{dataFormatada}</span></div>
-                      <div className="flex items-center gap-1"><Award size={13} className="text-green-600" /> <span>+{evento.carga_horaria}h</span></div>
-                      <div className="flex items-center gap-1 justify-end font-semibold text-yellow-600"><span>{vagasRestantes} vagas restantes</span></div>
+                  return (
+                    <div key={evento.id_evento} className="bg-white border border-gray-100 rounded-2xl shadow-sm flex flex-col overflow-hidden">
+                      <div className="h-2 bg-gradient-to-r from-yellow-300 to-yellow-700 w-full" />
+                      <div className="p-5 flex flex-col flex-1">
+                        <h3 className="font-bold text-black mb-2 line-clamp-1">{evento.titulo}</h3>
+                        <p className="text-xs text-gray-500 line-clamp-3 mb-4 flex-1">{evento.descricao}</p>
+
+                        <div className="grid grid-cols-2 gap-2 border-t border-gray-50 pt-3 text-xs text-gray-500 mb-4">
+                          <div className="flex items-center gap-1"><User size={13} /> <span className="truncate">{evento.palestrante}</span></div>
+                          <div className="flex items-center gap-1 justify-end"><Calendar size={13} /> <span>{dataFormatada}</span></div>
+                          <div className="flex items-center gap-1"><Award size={13} className="text-green-600" /> <span>+{evento.carga_horaria}h</span></div>
+                          <div className="flex items-center gap-1 justify-end font-semibold text-yellow-600"><span>{vagasRestantes} vagas restantes</span></div>
+                        </div>
+
+                        <BotaoInscricao idEvento={evento.id_evento} jaInscrito={jaInscrito} />
+                      </div>
                     </div>
+                  )
+                })}
+              </div>
 
-                    <BotaoInscricao idEvento={evento.id_evento} jaInscrito={jaInscrito} />
-                  </div>
+              {/* PAGINAÇÃO */}
+              {totalPaginas > 1 && (
+                <div className="flex items-center justify-center gap-2 mt-8">
+                  {pagina > 1 && (
+                    <a
+                      href={`?pagina=${pagina - 1}`}
+                      className="flex items-center gap-1 px-3 py-2 text-sm font-semibold text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all"
+                    >
+                      <ChevronLeft size={16} /> Anterior
+                    </a>
+                  )}
+
+                  <span className="text-sm text-gray-500 px-2">
+                    Página {pagina} de {totalPaginas}
+                  </span>
+
+                  {pagina < totalPaginas && (
+                    <a
+                      href={`?pagina=${pagina + 1}`}
+                      className="flex items-center gap-1 px-3 py-2 text-sm font-semibold text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all"
+                    >
+                      Próxima <ChevronRight size={16} />
+                    </a>
+                  )}
                 </div>
-              )
-            })}
-          </div>
+              )}
+            </>
+          )}
         </div>
 
         {/* SEÇÃO 2: MEUS INGRESSOS */}

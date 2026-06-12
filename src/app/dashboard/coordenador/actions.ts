@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 export type EventoState = {
   error: string | null;
@@ -10,9 +11,9 @@ export type EventoState = {
 };
 
 export async function cadastrarEvento(prevState: EventoState | null, formData: FormData): Promise<EventoState> {
-  const titulo = formData.get("titulo") as string;
-  const descricao = formData.get("descricao") as string;
-  const palestrante = formData.get("palestrante") as string;
+  const titulo = (formData.get("titulo") as string)?.trim();
+  const descricao = (formData.get("descricao") as string)?.trim();
+  const palestrante = (formData.get("palestrante") as string)?.trim();
   const cargaHoraria = Number(formData.get("carga_horaria"));
   const vagasLimite = Number(formData.get("vagas_limite"));
   const dataInicioStr = formData.get("data_inicio") as string;
@@ -20,19 +21,45 @@ export async function cadastrarEvento(prevState: EventoState | null, formData: F
   const horaInicioStr = formData.get("hora_inicio") as string;
   const horaFimStr = formData.get("hora_fim") as string;
 
-  // Resgata o ID do coordenador logado direto do cookie da sessão
+  // --- VALIDAÇÃO SERVER-SIDE ---
+  if (!titulo || !descricao || !palestrante || !dataInicioStr || !dataFimStr || !horaInicioStr || !horaFimStr) {
+    return { error: "Preencha todos os campos obrigatórios.", success: false };
+  }
+
+  if (titulo.length < 3) {
+    return { error: "O título deve ter no mínimo 3 caracteres.", success: false };
+  }
+
+  if (isNaN(cargaHoraria) || cargaHoraria <= 0) {
+    return { error: "Carga horária inválida.", success: false };
+  }
+
+  if (isNaN(vagasLimite) || vagasLimite <= 0) {
+    return { error: "Número de vagas inválido.", success: false };
+  }
+
+  const dataInicio = new Date(`${dataInicioStr}T00:00:00`);
+  const dataFim = new Date(`${dataFimStr}T00:00:00`);
+
+  if (isNaN(dataInicio.getTime()) || isNaN(dataFim.getTime())) {
+    return { error: "Datas inválidas.", success: false };
+  }
+
+  if (dataFim < dataInicio) {
+    return { error: "A data de fim não pode ser anterior à data de início.", success: false };
+  }
+  // --- FIM DA VALIDAÇÃO ---
+
   const cookieStore = await cookies();
   const idDoCookie = cookieStore.get("usuario_id")?.value;
 
   if (!idDoCookie) {
-    return { error: "Sessão expirada ou usuário não autenticado. Faça login novamente.", success: false };
+    redirect("/login");
   }
 
-  const id_usuario_coordenador = Number(idDoCookie); 
+  const id_usuario_coordenador = Number(idDoCookie);
 
   try {
-    const data_inicio = new Date(`${dataInicioStr}T00:00:00`);
-    const data_fim = new Date(`${dataFimStr}T00:00:00`);
     const hora_inicio = new Date(`1970-01-01T${horaInicioStr}:00`);
     const hora_fim = new Date(`1970-01-01T${horaFimStr}:00`);
 
@@ -43,8 +70,8 @@ export async function cadastrarEvento(prevState: EventoState | null, formData: F
         palestrante,
         carga_horaria: cargaHoraria,
         vagas_limite: vagasLimite,
-        data_inicio,
-        data_fim,
+        data_inicio: dataInicio,
+        data_fim: dataFim,
         hora_inicio,
         hora_fim,
         id_usuario: id_usuario_coordenador,
@@ -52,8 +79,8 @@ export async function cadastrarEvento(prevState: EventoState | null, formData: F
     });
 
     revalidatePath("/dashboard/coordenador");
-
     return { error: null, success: true };
+
   } catch (error) {
     console.error("Erro ao cadastrar evento:", error);
     return { error: "Erro interno ao salvar o evento no banco.", success: false };
@@ -120,11 +147,11 @@ export async function registrarPresencaQRCode(
       revalidatePath("/dashboard/aluno");
       revalidatePath("/dashboard/coordenador");
 
-      return { success: `Saída registrada com sucesso! Carga horária computada.` };
+      return { success: "Saída registrada com sucesso! Carga horária computada." };
     }
 
   } catch (error) {
-    console.error("Erro crítico ao validar QR Code na Server Action:", error);
+    console.error("Erro crítico ao validar QR Code:", error);
     return { error: "Erro interno no servidor ao processar os dados de presença." };
   }
 }

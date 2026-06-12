@@ -9,20 +9,36 @@ export type FormState = {
 };
 
 export async function registrarUsuario(
-  prevState: FormState | null, 
+  prevState: FormState | null,
   formData: FormData
 ): Promise<FormState> {
-  
-  const nome = formData.get("nome") as string;
-  const email = formData.get("email") as string;
+
+  const nome = (formData.get("nome") as string)?.trim();
+  const email = (formData.get("email") as string)?.trim().toLowerCase();
   const senhaRaw = formData.get("senha") as string;
 
-  const id_tipo_perfil = "ALU"; 
+  // --- VALIDAÇÃO SERVER-SIDE ---
+  if (!nome || !email || !senhaRaw) {
+    return { error: "Preencha todos os campos.", success: false };
+  }
+
+  if (nome.length < 3) {
+    return { error: "Informe seu nome completo (mínimo 3 caracteres).", success: false };
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return { error: "Informe um e-mail válido.", success: false };
+  }
+
+  if (senhaRaw.length < 6) {
+    return { error: "A senha deve ter no mínimo 6 caracteres.", success: false };
+  }
+  // --- FIM DA VALIDAÇÃO ---
 
   const saltRounds = 10;
-  
+
   try {
-    
     const usuarioExistente = await prisma.usuarios.findUnique({
       where: { email }
     });
@@ -38,7 +54,7 @@ export async function registrarUsuario(
         nome,
         email,
         senha: senhaHash,
-        id_tipo_perfil,
+        id_tipo_perfil: "ALU",
       },
     });
 
@@ -46,9 +62,9 @@ export async function registrarUsuario(
 
   } catch (error) {
     console.error("Erro interno ao cadastrar:", error);
-    return { 
-      error: "Ocorreu um erro ao processar seu cadastro. Tente novamente mais tarde.", 
-      success: false 
+    return {
+      error: "Ocorreu um erro ao processar seu cadastro. Tente novamente mais tarde.",
+      success: false
     };
   }
 }
