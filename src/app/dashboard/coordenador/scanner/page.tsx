@@ -14,7 +14,7 @@ export default function ScannerPage() {
 
   const scannerRef = useRef<Html5Qrcode | null>(null)
   const tipoPresencaRef = useRef(tipoPresenca)
-  const processandoRef = useRef(false) // Evita processar dois QR codes ao mesmo tempo
+  const processandoRef = useRef(false)
 
   useEffect(() => {
     tipoPresencaRef.current = tipoPresenca
@@ -27,54 +27,55 @@ export default function ScannerPage() {
 
     async function iniciarCamera() {
       try {
-        // Limpa o container antes de criar nova instância
         const container = document.getElementById("reader")
         if (container) container.innerHTML = ""
 
-        // Html5Qrcode abre a câmera DIRETAMENTE, sem tela intermediária
         scanner = new Html5Qrcode("reader")
         scannerRef.current = scanner
 
         await scanner.start(
-          { facingMode: "environment" }, // câmera traseira no celular
-          {
-            fps: 10,
-            qrbox: { width: 250, height: 250 },
-            aspectRatio: 1.0,
-          },
-          async (decodedText: string) => {
-            // Evita processar múltiplos frames do mesmo QR Code
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
+
+          // ✅ CALLBACK DE SUCESSO — totalmente síncrono no início, sem await bloqueante
+          (decodedText: string) => {
+            // Evita processar o mesmo QR Code duas vezes
             if (processandoRef.current) return
             processandoRef.current = true
 
+            // 1. Para a câmera de forma NÃO-BLOQUEANTE (fire-and-forget)
+            // Não usamos await aqui — no mobile o await trava o thread e quebra a página
+            const scannerParaParar = scannerRef.current
+            scannerRef.current = null
+            if (scannerParaParar) {
+              scannerParaParar.stop().catch(() => {
+                // Ignora erros de parada — a câmera pode já ter sido liberada
+              })
+            }
+
+            // 2. Atualiza UI imediatamente (antes mesmo do servidor responder)
             setScaneando(false)
             setCameraIniciada(false)
-
-            // Para a câmera imediatamente após leitura
-            if (scannerRef.current) {
-              try {
-                await scannerRef.current.stop()
-                scannerRef.current = null
-              } catch (e) {
-                console.error("Erro ao parar scanner:", e)
-              }
-            }
-
             setStatus({ success: "Processando código..." })
 
-            const resultado = await registrarPresencaQRCode(decodedText, tipoPresencaRef.current)
-
-            if (resultado.error) {
-              setStatus({ error: resultado.error })
-            } else {
-              setStatus({ success: resultado.success })
-            }
-
-            processandoRef.current = false
+            // 3. Chama o servidor de forma independente
+            registrarPresencaQRCode(decodedText, tipoPresencaRef.current)
+              .then((resultado) => {
+                if (resultado.error) {
+                  setStatus({ error: resultado.error })
+                } else {
+                  setStatus({ success: resultado.success })
+                }
+                processandoRef.current = false
+              })
+              .catch(() => {
+                setStatus({ error: "Erro de conexão. Verifique sua internet e tente novamente." })
+                processandoRef.current = false
+              })
           },
-          () => {
-            // Callback de erro por frame — ignorado intencionalmente (frames sem QR são normais)
-          }
+
+          // Callback de erro por frame — ignorado intencionalmente
+          () => {}
         )
 
         setCameraIniciada(true)
@@ -87,12 +88,10 @@ export default function ScannerPage() {
 
     iniciarCamera()
 
-    // Cleanup: para a câmera ao sair da página ou ao resetar
     return () => {
+      // Cleanup ao desmontar — também fire-and-forget para não bloquear navegação
       if (scanner) {
-        scanner.stop()
-          .then(() => { scannerRef.current = null })
-          .catch((err) => console.error("Erro ao parar câmera no cleanup:", err))
+        scanner.stop().catch(() => {})
       }
     }
   }, [scaneando])
@@ -108,7 +107,6 @@ export default function ScannerPage() {
     <div className="min-h-screen bg-gray-100 text-white p-4 flex flex-col items-center justify-center">
       <div className="w-full max-w-md bg-gray-700 rounded-2xl p-6 border border-white shadow-xl">
 
-        {/* Voltar */}
         <Link href="/dashboard/coordenador" className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-white mb-6 transition-colors">
           <ArrowLeft size={14} /> Voltar ao Painel
         </Link>
@@ -120,7 +118,6 @@ export default function ScannerPage() {
           <p className="text-xs text-gray-400 mt-1">Utilize a câmera do aparelho para escanear o QR Code do ingresso do aluno</p>
         </div>
 
-        {/* Seletor Entrada / Saída */}
         {scaneando && (
           <div className="grid grid-cols-2 gap-2 bg-gray-900 p-1 rounded-xl mb-6 border border-gray-700">
             <button
@@ -138,12 +135,10 @@ export default function ScannerPage() {
           </div>
         )}
 
-        {/* Container da Câmera */}
         <div className="overflow-hidden rounded-xl bg-gray-900 border border-gray-700 relative flex flex-col items-center justify-center min-h-[300px]">
           {scaneando ? (
             <div className="relative w-full min-h-[300px] flex items-center justify-center">
 
-              {/* Loading enquanto câmera abre */}
               {!cameraIniciada && (
                 <div className="absolute inset-0 bg-gray-900 z-10 flex flex-col items-center justify-center gap-3 p-6 text-center">
                   <div className="p-3 bg-gray-800 rounded-full">
@@ -158,18 +153,10 @@ export default function ScannerPage() {
                 </div>
               )}
 
-              {/* Estilos para esconder elementos padrão do html5-qrcode */}
               <style jsx global>{`
-                #reader {
-                  border: none !important;
-                  width: 100% !important;
-                }
-                #reader img {
-                  display: none !important;
-                }
-                #reader__scan_region {
-                  background: transparent !important;
-                }
+                #reader { border: none !important; width: 100% !important; }
+                #reader img { display: none !important; }
+                #reader__scan_region { background: transparent !important; }
               `}</style>
 
               <div id="reader" className="w-full bg-gray-900" />
