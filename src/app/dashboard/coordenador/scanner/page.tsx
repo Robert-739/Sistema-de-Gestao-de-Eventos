@@ -15,14 +15,20 @@ export default function ScannerPage() {
   const scannerRef = useRef<Html5QrcodeScanner | null>(null)
   const tipoPresencaRef = useRef(tipoPresenca)
 
-  // Sincroniza o ref sempre que o estado mudar
+  // Sincroniza o ref sempre que o estado mudar para que o callback assíncrono leia o valor correto
   useEffect(() => {
     tipoPresencaRef.current = tipoPresenca
   }, [tipoPresenca])
 
   useEffect(() => {
-    if (scaneando) {
-      const scanner = new Html5QrcodeScanner(
+    let scannerAtivo: Html5QrcodeScanner | null = null
+    let verificarVideo: NodeJS.Timeout
+
+    async function inicializarScanner() {
+      if (!scaneando) return
+
+      // Cria a instância isolada no escopo atual deste efeito
+      scannerAtivo = new Html5QrcodeScanner(
         "reader",
         { 
           fps: 10,             
@@ -32,56 +38,68 @@ export default function ScannerPage() {
         /* verbose= */ false
       )
 
-      scannerRef.current = scanner
+      scannerRef.current = scannerAtivo
 
-      scanner.render(
-        async (decodedText: string) => {
-          setScaneando(false) 
-          
-          if (scannerRef.current) {
-            scannerRef.current.clear().catch((e) => console.error(e))
-            scannerRef.current = null
+      try {
+        scannerAtivo.render(
+          async (decodedText: string) => {
+            setScaneando(false) 
+            setCameraIniciada(false)
+            
+            if (scannerRef.current) {
+              // Limpa de forma segura a instância assim que decodificar com sucesso
+              await scannerRef.current.clear().catch((e) => console.error("Erro ao limpar no sucesso:", e))
+              scannerRef.current = null
+            }
+
+            setStatus({ success: "Processando código..." })
+
+            const resultado = await registrarPresencaQRCode(decodedText, tipoPresencaRef.current)
+            
+            if (resultado.error) {
+              setStatus({ error: resultado.error })
+            } else {
+              setStatus({ success: resultado.success })
+            }
+          },
+          (_error: unknown) => {
+            // Ignora erros contínuos de varredura visual de frames
           }
+        )
 
-          setStatus({ success: "Processando código..." })
-
-          const resultado = await registrarPresencaQRCode(decodedText, tipoPresencaRef.current)
-          
-          if (resultado.error) {
-            setStatus({ error: resultado.error })
-          } else {
-            setStatus({ success: resultado.success })
+        // Monitora de forma segura a inserção do elemento de vídeo para remover a tela de carregamento
+        verificarVideo = setInterval(() => {
+          const videoElement = document.querySelector("#reader video")
+          if (videoElement) {
+            setCameraIniciada(true)
+            clearInterval(verificarVideo)
           }
-        },
-        (_error: unknown) => {
-          // Ignora erros contínuos de busca
-        }
-      )
+        }, 300)
 
-      const verificarVideo = setInterval(() => {
-        const videoElement = document.querySelector("#reader video")
-        if (videoElement) {
-          setCameraIniciada(true)
-          clearInterval(verificarVideo)
-        }
-      }, 300)
-
-      return () => clearInterval(verificarVideo)
+      } catch (err) {
+        console.error("Falha ao renderizar o scanner:", err)
+      }
     }
 
+    inicializarScanner()
+
+    // MECANISMO DE LIMPEZA (Cleanup): Executado estritamente ao desmontar ou resetar o estado
     return () => {
-      if (scannerRef.current) {
-        scannerRef.current.clear()
+      if (verificarVideo) clearInterval(verificarVideo)
+      
+      if (scannerAtivo) {
+        // Força a liberação assíncrona do hardware da câmera no navegador antes de anular as referências
+        scannerAtivo.clear()
           .then(() => {
             scannerRef.current = null
           })
-          .catch((err: unknown) => console.error("Erro ao limpar scanner", err))
+          .catch((err: unknown) => console.error("Erro ao limpar scanner no encerramento de efeito:", err))
       }
     }
   }, [scaneando]) 
 
   const resetarScanner = () => {
-    setCameraIniciada(false) // Mudança para cá: Reseta o carregamento de forma segura antes do useEffect rodar
+    setCameraIniciada(false) 
     setStatus(null)
     setScaneando(true)
   }
