@@ -12,6 +12,12 @@ const permissoesPorRota = [
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // AJUSTE DE SEGURANÇA: Se a requisição for para a API ou arquivos de certificado, 
+  // deixa passar direto sem aplicar nenhuma regra de redirecionamento de tela.
+  if (pathname.startsWith("/api") || pathname.includes("certificado")) {
+    return NextResponse.next();
+  }
+
   const usuarioId = request.cookies.get("usuario_id")?.value;
   const usuarioPerfil = request.cookies.get("usuario_perfil")?.value;
 
@@ -24,7 +30,7 @@ export function middleware(request: NextRequest) {
     resposta.cookies.delete("usuario_id");
     resposta.cookies.delete("usuario_perfil");
     resposta.headers.set("Cache-Control", "no-store, max-age=0, must-revalidate");
-    return resposta;
+    return status;
   }
 
   // 2. Se está tentando acessar as rotas públicas de login/cadastro diretamente
@@ -59,5 +65,6 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
+  // Mantemos o mapeamento estrito das suas páginas visuais
   matcher: ["/", "/dashboard/:path*", "/login", "/cadastro"],
 };
