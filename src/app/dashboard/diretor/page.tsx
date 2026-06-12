@@ -14,7 +14,6 @@ import {
 export const dynamic = "force-dynamic"
 
 export default async function DiretorPage() {
-  // 1. DISPARAR QUERIES EM PARALELO PARA MÁXIMA PERFORMANCE
   const [
     totalAlunos,
     totalCoordenadores,
@@ -24,13 +23,11 @@ export default async function DiretorPage() {
     eventosDetalhados,
     listaCoordenadores
   ] = await Promise.all([
-    // Contagens básicas
     prisma.usuarios.count({ where: { id_tipo_perfil: "ALU" } }),
     prisma.usuarios.count({ where: { id_tipo_perfil: "COO" } }),
     prisma.eventos.count(),
     prisma.inscricoes.count(),
     
-    // Total de inscrições que completaram entrada E saída (Certificados emitidos)
     prisma.inscricoes.count({
       where: {
         presenca_entrada: true,
@@ -38,7 +35,6 @@ export default async function DiretorPage() {
       }
     }),
 
-    // Dados profundos de eventos para o relatório de engajamento
     prisma.eventos.findMany({
       include: {
         usuarios: { // Coordenador do evento
@@ -52,10 +48,9 @@ export default async function DiretorPage() {
         }
       },
       orderBy: { data_inicio: "desc" },
-      take: 5 // Traz os 5 mais recentes/relevantes para não sobrecarregar
+      take: 5 
     }),
 
-    // Lista de coordenadores para a tabela de gestão de acessos
     prisma.usuarios.findMany({
       where: { id_tipo_perfil: "COO" },
       select: { id_usuario: true, nome: true, email: true },
@@ -63,15 +58,10 @@ export default async function DiretorPage() {
     })
   ])
 
-  // 2. CÁLCULO DE MÉTRICAS ESTRATÉGICAS (REAIS)
-  
-  // Taxa de Efetividade de Certificação: Quantos % dos inscritos de fato ganharam o certificado
   const taxaCertificacao = totalInscricoes > 0 
     ? Math.round((totalCertificadosValidos / totalInscricoes) * 100) 
     : 0
 
-  // Cálculo de Horas Complementares Injetadas no ecossistema da faculdade
-  // Soma a carga horária de cada evento multiplicada pelos alunos que de fato completaram a presença dupla nele
   let totalHorasInjetadas = 0
   let totalVagasOfertadas = 0
   
@@ -81,7 +71,6 @@ export default async function DiretorPage() {
     totalVagasOfertadas += evt.vagas_limite || 0
   })
 
-  // Taxa de Ocupação de Vagas (Aproveitamento das salas/auditórios)
   const taxaOcupacaoVagas = totalVagasOfertadas > 0
     ? Math.round((totalInscricoes / totalVagasOfertadas) * 100)
     : 0
@@ -89,7 +78,6 @@ export default async function DiretorPage() {
   return (
     <div className="p-8 w-full mx-auto text-white flex flex-col gap-8 ">
       
-      {/* CABEÇALHO */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-gray-200 pb-6">
         <div>
           <h1 className="text-2xl font-black text-gray-900 tracking-tight">Painel do Diretor</h1>
@@ -105,10 +93,8 @@ export default async function DiretorPage() {
         </Link>
       </div>
 
-      {/* GRID DE CARDS INTELIGENTES (KPIs) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         
-        {/* Card 1: Eficiência de Certificação */}
         <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between gap-4">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Efetividade</span>
@@ -122,7 +108,6 @@ export default async function DiretorPage() {
           </div>
         </div>
 
-        {/* Card 2: Impacto no Banco de Horas */}
         <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between gap-4">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Horas Emitidas</span>
@@ -136,7 +121,6 @@ export default async function DiretorPage() {
           </div>
         </div>
 
-        {/* Card 3: Aproveitamento de Infraestrutura */}
         <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between gap-4">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Ocupação de Vagas</span>
@@ -150,7 +134,6 @@ export default async function DiretorPage() {
           </div>
         </div>
 
-        {/* Card 4: Volume Total da Operação */}
         <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between gap-4">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Base Geral</span>
@@ -166,10 +149,8 @@ export default async function DiretorPage() {
 
       </div>
 
-      {/* BLOCO DUPLO: RELATÓRIO DE EVENTOS + EQUIPE ACADÊMICA */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* COLUNA 1 & 2: RELATÓRIO DE ENGAJAMENTO DOS EVENTOS (AUDITORIA) */}
         <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden lg:col-span-2 flex flex-col justify-between">
           <div>
             <div className="p-5 border-b border-gray-100 bg-gray-50/50">
@@ -223,7 +204,6 @@ export default async function DiretorPage() {
           </div>
         </div>
 
-        {/* COLUNA 3: EQUIPE DE COORDENADORES (CONTROLE DE ACESSOS) */}
         <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden flex flex-col justify-between">
           <div>
             <div className="p-5 border-b border-gray-100 bg-gray-50/50">

@@ -9,11 +9,9 @@ export default async function CoordenadorLayout({
 }: {
   children: React.ReactNode
 }) {
-  // 1. Acessa os cookies de forma assíncrona no servidor
   const cookieStore = await cookies()
   const usuarioId = cookieStore.get("usuario_id")?.value || ""
 
-  // 2. Busca o nome e o e-mail real do coordenador no banco usando o ID do cookie
   const usuario = await prisma.usuarios.findUnique({
     where: {
       id_usuario: Number(usuarioId) || 0,
@@ -37,7 +35,6 @@ export default async function CoordenadorLayout({
 
   const iniciais = obtenerIniciais(nomeUsuario)
 
-  // Server Action compartilhada para o logout
   async function fazerLogout() {
     "use server"
     const cookieStore = await cookies()
@@ -49,7 +46,6 @@ export default async function CoordenadorLayout({
   return (
     <div className="flex min-h-screen bg-gray-50 text-black">
       
-      {/* SIDEBAR FIXA */}
       <aside className="w-64 bg-slate-900 text-white flex flex-col justify-between p-5 border-r border-slate-800 shrink-0 hidden md:flex">
         <div>
           <div className="flex items-center gap-2.5 px-2 py-4 border-b border-slate-800 mb-6">
@@ -119,9 +115,7 @@ export default async function CoordenadorLayout({
         </div>
       </aside>
 
-      {/* CONTEÚDO PRINCIPAL */}
       <main className="flex-1 overflow-y-auto max-h-screen">
-        {/* Topbar para Mobile */}
         <header className="bg-slate-900 text-white p-4 flex items-center justify-between md:hidden shadow-md">
           <div className="flex items-center gap-2">
             <GraduationCap size={18} className="text-blue-500" />
@@ -131,7 +125,6 @@ export default async function CoordenadorLayout({
             <Link href="/dashboard/coordenador" className="text-slate-300 hover:text-white">Painel</Link>
             <Link href="/dashboard/coordenador/scanner" className="bg-blue-600 px-2 py-0.5 rounded-md text-[11px] text-white">Scanner</Link>
             
-            {/* BOTÃO SAIR NO CELULAR */}
             <form action={fazerLogout}>
               <button type="submit" className="text-red-400 hover:text-red-500 flex items-center gap-0.5 ml-1">
                 <LogOut size={13} /> Sair

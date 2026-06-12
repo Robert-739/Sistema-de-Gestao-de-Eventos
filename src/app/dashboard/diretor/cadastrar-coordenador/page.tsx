@@ -13,10 +13,8 @@ export default function CadastrarCoordenadorPage() {
   return (
     <div className="min-h-screen w-full bg-gray-50 flex flex-col items-center justify-center p-4">
       
-      {/* CARD DO FORMULÁRIO */}
       <div className="w-full max-w-[500px] bg-white p-6 rounded-2xl shadow-sm border border-gray-100 text-black">
         
-        {/* BOTÃO VOLTAR: Posicionado estrategicamente no topo do card */}
         <Link 
           href="/dashboard/diretor" 
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-400 hover:text-gray-600 transition-colors mb-5 group"
@@ -25,7 +23,6 @@ export default function CadastrarCoordenadorPage() {
           Voltar ao Painel
         </Link>
 
-        {/* CABEÇALHO DO CARD */}
         <div className="flex items-center gap-3 mb-6">
           <div className="bg-[#FFD700] p-2.5 rounded-xl text-black">
             <UserPlus size={24} />
@@ -36,7 +33,6 @@ export default function CadastrarCoordenadorPage() {
           </div>
         </div>
 
-        {/* FEEDBACKS */}
         {state?.error && (
           <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-xl mb-4 text-sm">
             {state.error}
@@ -49,7 +45,6 @@ export default function CadastrarCoordenadorPage() {
           </div>
         )}
 
-        {/* FORMULÁRIO */}
         <form action={formAction} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-semibold text-gray-700">Nome Completo</label>

@@ -21,7 +21,6 @@ export async function cadastrarEvento(prevState: EventoState | null, formData: F
   const horaInicioStr = formData.get("hora_inicio") as string;
   const horaFimStr = formData.get("hora_fim") as string;
 
-  // --- VALIDAÇÃO SERVER-SIDE ---
   if (!titulo || !descricao || !palestrante || !dataInicioStr || !dataFimStr || !horaInicioStr || !horaFimStr) {
     return { error: "Preencha todos os campos obrigatórios.", success: false };
   }
@@ -48,7 +47,6 @@ export async function cadastrarEvento(prevState: EventoState | null, formData: F
   if (dataFim < dataInicio) {
     return { error: "A data de fim não pode ser anterior à data de início.", success: false };
   }
-  // --- FIM DA VALIDAÇÃO ---
 
   const cookieStore = await cookies();
   const idDoCookie = cookieStore.get("usuario_id")?.value;
@@ -123,9 +121,6 @@ export async function registrarPresencaQRCode(
         },
       });
 
-      revalidatePath("/dashboard/aluno");
-      revalidatePath("/dashboard/coordenador");
-
       return { success: `Entrada autorizada! Evento: ${inscricao.eventos?.titulo || "Acadêmico"}` };
     } else {
       if (inscricao.presenca_entrada !== true) {
@@ -143,9 +138,6 @@ export async function registrarPresencaQRCode(
           horario_saida: agora,
         },
       });
-
-      revalidatePath("/dashboard/aluno");
-      revalidatePath("/dashboard/coordenador");
 
       return { success: "Saída registrada com sucesso! Carga horária computada." };
     }

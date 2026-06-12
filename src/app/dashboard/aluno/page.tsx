@@ -48,13 +48,11 @@ export default async function DashboardAlunoPage({
     <div className="p-6 sm:p-8 text-black">
       <div className="max-w-6xl mx-auto">
 
-        {/* Header */}
         <div className="mb-8 pb-6 border-b border-gray-200">
           <h1 className="text-2xl font-bold text-gray-900">Portal do Aluno</h1>
           <p className="text-sm text-gray-500">Inscreva-se em eventos e acesse seus ingressos com QR Code para validação de presença</p>
         </div>
 
-        {/* SEÇÃO 1: EVENTOS DISPONÍVEIS */}
         <div className="mb-12">
           <h2 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
             <Calendar size={20} className="text-yellow-700" /> Eventos Disponíveis
@@ -94,7 +92,6 @@ export default async function DashboardAlunoPage({
                 })}
               </div>
 
-              {/* PAGINAÇÃO */}
               {totalPaginas > 1 && (
                 <div className="flex items-center justify-center gap-2 mt-8">
                   {pagina > 1 && (
@@ -124,7 +121,6 @@ export default async function DashboardAlunoPage({
           )}
         </div>
 
-        {/* SEÇÃO 2: MEUS INGRESSOS */}
         <div id="ingressos" className="border-t border-gray-200 pt-8 scroll-mt-6">
           <h2 className="text-lg font-bold text-black mb-6 flex items-center gap-2">
             <Ticket size={20} className="text-yellow-600" /> Meus Ingressos (QR Codes)

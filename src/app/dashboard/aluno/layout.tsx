@@ -47,7 +47,6 @@ export default async function AlunoLayout({
   return (
     <div className="flex min-h-screen bg-gray-50 text-black">
       
-      {/* SIDEBAR FIXA DO ALUNO */}
       <aside className="w-64 bg-slate-950 text-white flex flex-col justify-between p-5 border-r border-slate-900 shrink-0 hidden md:flex">
         <div>
           <div className="flex items-center gap-2.5 px-2 py-4 border-b border-slate-900 mb-6">
@@ -109,9 +108,7 @@ export default async function AlunoLayout({
         </div>
       </aside>
 
-      {/* CONTEÚDO PRINCIPAL */}
       <main className="flex-1 overflow-y-auto max-h-screen">
-        {/* Topbar para Mobile */}
         <header className="bg-slate-950 text-white p-4 flex items-center justify-between md:hidden shadow-md">
           <div className="flex items-center gap-2">
             <GraduationCap size={18} className="text-indigo-500" />
@@ -121,7 +118,6 @@ export default async function AlunoLayout({
             <Link href="/dashboard/aluno" className="text-slate-300 hover:text-white">Eventos</Link>
             <Link href="/dashboard/aluno#ingressos" className="text-indigo-400 font-bold">QRs</Link>
             
-            {/* BOTÃO SAIR NO CELULAR */}
             <form action={fazerLogout}>
               <button type="submit" className="text-red-400 hover:text-red-500 flex items-center gap-0.5 ml-1">
                 <LogOut size={13} /> Sair

@@ -13,7 +13,6 @@ export async function cadastrarCoordenador(prevState: FormState | null, formData
   const email = (formData.get("email") as string)?.trim().toLowerCase();
   const senhaRaw = formData.get("senha") as string;
 
-  // --- VALIDAÇÃO SERVER-SIDE ---
   if (!nome || !email || !senhaRaw) {
     return { error: "Preencha todos os campos.", success: false };
   }
@@ -30,7 +29,6 @@ export async function cadastrarCoordenador(prevState: FormState | null, formData
   if (senhaRaw.length < 6) {
     return { error: "A senha deve ter no mínimo 6 caracteres.", success: false };
   }
-  // --- FIM DA VALIDAÇÃO ---
 
   const saltRounds = 10;
 

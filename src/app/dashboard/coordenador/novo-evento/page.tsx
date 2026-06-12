@@ -9,19 +9,15 @@ const initialState = { error: null, success: false }
 export default function NovoEventoPage() {
   const [state, formAction, isPending] = useActionState(cadastrarEvento, initialState)
 
-  // Estados controlados para capturar os valores e calcular as horas automaticamente
   const [dataInicio, setDataInicio] = useState("")
   const [dataFim, setDataFim] = useState("")
   const [horaInicio, setHoraInicio] = useState("")
   const [horaFim, setHoraFim] = useState("")
   
-  // Estado para quando o usuário alterar as horas manualmente
   const [cargaHorariaManual, setCargaHorariaManual] = useState<number | null>(null)
 
-  // OBRIGATORIEDADE CLIENT-SIDE: Gera a data atual no formato YYYY-MM-DD para travar o calendário
   const hojeMinimo = new Date().toISOString().split("T")[0]
 
-  // CÁLCULO EM TEMPO DE RENDERIZAÇÃO: Calcula a diferença apenas se todos os campos estiverem preenchidos
   let cargaHorariaCalculada = 1
   if (dataInicio && dataFim && horaInicio && horaFim) {
     const dataHoraInicio = new Date(`${dataInicio}T${horaInicio}`)
@@ -30,19 +26,16 @@ export default function NovoEventoPage() {
     const diferencaMs = dataHoraFim.getTime() - dataHoraInicio.getTime()
     
     if (diferencaMs > 0) {
-      // Converte milissegundos em horas (arredondando para cima)
       cargaHorariaCalculada = Math.ceil(diferencaMs / (1000 * 60 * 60))
     }
   }
 
-  // Define qual valor será renderizado no input e enviado pelo formulário
   const cargaHorariaFinal = cargaHorariaManual !== null ? cargaHorariaManual : cargaHorariaCalculada
 
   return (
     <div className="p-6 flex items-center justify-center text-black">
       <div className="w-full max-w-[650px] bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
         
-        {/* Cabeçalho */}
         <div className="flex items-center gap-3 mb-8 pb-4 border-b border-gray-100">
           <div className="bg-yellow-300 p-2.5 rounded-xl text-white">
             <Calendar size={24} />
@@ -53,7 +46,6 @@ export default function NovoEventoPage() {
           </div>
         </div>
 
-        {/* Notificações */}
         {state?.error && (
           <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-xl mb-6 text-sm">
             {state.error}
@@ -66,7 +58,6 @@ export default function NovoEventoPage() {
           </div>
         )}
 
-        {/* Formulário */}
         <form action={formAction} className="flex flex-col gap-5">
           
           <div className="flex flex-col gap-1.5">
@@ -102,7 +93,6 @@ export default function NovoEventoPage() {
             </div>
           </div>
 
-          {/* Grid Datas */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-semibold text-gray-700">Data de Início</label>
@@ -112,7 +102,7 @@ export default function NovoEventoPage() {
                 value={dataInicio}
                 onChange={(e) => {
                   setDataInicio(e.target.value)
-                  setCargaHorariaManual(null) // Reseta alteração manual para recalcular automático
+                  setCargaHorariaManual(null) 
                 }}
                 min={hojeMinimo}
                 required
@@ -127,16 +117,15 @@ export default function NovoEventoPage() {
                 value={dataFim}
                 onChange={(e) => {
                   setDataFim(e.target.value)
-                  setCargaHorariaManual(null) // Reseta alteração manual para recalcular automático
+                  setCargaHorariaManual(null) 
                 }}
-                min={dataInicio || hojeMinimo} // Impede data final menor que a de início
+                min={dataInicio || hojeMinimo} 
                 required
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-yellow-300 transition-all text-sm" 
               />
             </div>
           </div>
 
-          {/* Grid Horários */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-semibold text-gray-700">Horário de Início</label>
@@ -174,7 +163,6 @@ export default function NovoEventoPage() {
             </div>
           </div>
 
-          {/* Grid Vagas e Carga Horária */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-semibold text-gray-700">Limite de Vagas</label>
@@ -198,7 +186,7 @@ export default function NovoEventoPage() {
                   min={1} 
                   required 
                   value={cargaHorariaFinal}
-                  onChange={(e) => setCargaHorariaManual(Number(e.target.value))} // Dá liberdade para mudar manualmente se necessário
+                  onChange={(e) => setCargaHorariaManual(Number(e.target.value))}
                   className="w-full pl-10 pr-4 py-2.5 border border-amber-200 bg-amber-50 font-medium rounded-xl outline-none focus:ring-2 focus:ring-yellow-300 transition-all text-sm text-black" 
                 />
               </div>

@@ -59,7 +59,6 @@ export async function cancelarInscricao(idInscricao: number) {
   try {
     const idAlunoLogado = await obterIdAluno()
 
-    // Verifica se a inscrição pertence ao aluno logado antes de deletar
     const inscricao = await prisma.inscricoes.findUnique({
       where: { id_inscricao: idInscricao }
     })

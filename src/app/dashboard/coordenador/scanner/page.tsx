@@ -37,28 +37,21 @@ export default function ScannerPage() {
           { facingMode: "environment" },
           { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
 
-          // ✅ CALLBACK DE SUCESSO — totalmente síncrono no início, sem await bloqueante
           (decodedText: string) => {
-            // Evita processar o mesmo QR Code duas vezes
             if (processandoRef.current) return
             processandoRef.current = true
 
-            // 1. Para a câmera de forma NÃO-BLOQUEANTE (fire-and-forget)
-            // Não usamos await aqui — no mobile o await trava o thread e quebra a página
             const scannerParaParar = scannerRef.current
             scannerRef.current = null
             if (scannerParaParar) {
               scannerParaParar.stop().catch(() => {
-                // Ignora erros de parada — a câmera pode já ter sido liberada
               })
             }
 
-            // 2. Atualiza UI imediatamente (antes mesmo do servidor responder)
             setScaneando(false)
             setCameraIniciada(false)
             setStatus({ success: "Processando código..." })
 
-            // 3. Chama o servidor de forma independente
             registrarPresencaQRCode(decodedText, tipoPresencaRef.current)
               .then((resultado) => {
                 if (resultado.error) {
@@ -74,7 +67,6 @@ export default function ScannerPage() {
               })
           },
 
-          // Callback de erro por frame — ignorado intencionalmente
           () => {}
         )
 
@@ -89,7 +81,6 @@ export default function ScannerPage() {
     iniciarCamera()
 
     return () => {
-      // Cleanup ao desmontar — também fire-and-forget para não bloquear navegação
       if (scanner) {
         scanner.stop().catch(() => {})
       }

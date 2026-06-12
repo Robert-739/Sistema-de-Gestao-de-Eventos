@@ -3,7 +3,6 @@ import Link from "next/link"
 import { Calendar, Plus, Clock, Users, Award, User, ArrowRight, QrCode } from "lucide-react"
 import { eventos } from "@/generated/prisma"
 
-// Função para buscar os eventos direto no servidor (Server Component)
 async function obterEventos() {
   try {
     const lista = await prisma.eventos.findMany({
@@ -25,7 +24,6 @@ export default async function DashboardCoordenadorPage() {
     <div className="p-6 sm:p-8 text-black">
       <div className="max-w-6xl mx-auto">
         
-        {/* Cabeçalho do Dashboard */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 pb-6 border-b border-gray-200">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Painel do Coordenador</h1>
@@ -41,7 +39,6 @@ export default async function DashboardCoordenadorPage() {
           </Link>
         </div>
 
-        {/* Grid de Eventos */}
         {eventosCadastrados.length === 0 ? (
           <div className="bg-white border border-gray-200 rounded-2xl p-12 text-center max-w-md mx-auto mt-12">
             <Calendar size={48} className="mx-auto text-gray-300 mb-4" />
@@ -65,7 +62,6 @@ export default async function DashboardCoordenadorPage() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {eventosCadastrados.map((evento: eventos) => {
-                // Formatação simples de data para exibição amigável brasileira
                 const dataFormatada = new Date(evento.data_inicio).toLocaleDateString("pt-BR")
 
                 return (
@@ -73,10 +69,8 @@ export default async function DashboardCoordenadorPage() {
                     key={evento.id_evento} 
                     className="bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-all flex flex-col overflow-hidden group"
                   >
-                    {/* Topo do Card - Substitui o Banner por um visual gradiente limpo */}
                     <div className="h-3 bg-gradient-to-r from-yellow-300 to-yellow-600 w-full" />
                     
-                    {/* Conteúdo do Card */}
                     <div className="p-5 flex flex-col flex-1">
                       <div className="flex items-start justify-between gap-2 mb-3">
                         <h3 className="font-bold text-gray-900 group-hover:text-yellow-600 transition-colors line-clamp-1">
@@ -88,7 +82,6 @@ export default async function DashboardCoordenadorPage() {
                         {evento.descricao}
                       </p>
 
-                      {/* Metadados / Detalhes informativos */}
                       <div className="grid grid-cols-2 gap-y-2.5 gap-x-2 border-t border-gray-50 pt-4 mt-auto text-xs text-gray-500">
                         <div className="flex items-center gap-1.5 min-w-0">
                           <User size={14} className="text-gray-400 shrink-0" />
@@ -113,7 +106,6 @@ export default async function DashboardCoordenadorPage() {
                         </div>
                       </div>
 
-                      {/* Ações do Card */}
                       <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
                         <Link 
                           href={`/dashboard/coordenador/editar-evento/${evento.id_evento}`}
@@ -122,7 +114,6 @@ export default async function DashboardCoordenadorPage() {
                           Editar
                         </Link>
                         
-                        {/* BOTÃO ATUALIZADO: Redireciona para o scanner passando o ID do evento na URL */}
                         <Link 
                           href={`/dashboard/coordenador/scanner?eventoId=${evento.id_evento}`}
                           className="inline-flex items-center gap-1.5 bg-gray-900 hover:bg-black text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all active:scale-95"

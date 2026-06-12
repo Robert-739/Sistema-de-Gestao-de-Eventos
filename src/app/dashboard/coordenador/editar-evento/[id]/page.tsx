@@ -15,7 +15,6 @@ export default function EditarEventoPage({ params }: EditarEventoProps) {
   const idEvento = Number(id)
   const router = useRouter()
 
-  // Estados para controlar o carregamento e os campos do formulário
   const [carregando, setCarregando] = useState(true)
   const [titulo, setTitulo] = useState("")
   const [palestrante, setPalestrante] = useState("")
@@ -25,12 +24,10 @@ export default function EditarEventoPage({ params }: EditarEventoProps) {
   const [dataInicio, setDataInicio] = useState("")
   const [dataFim, setDataFim] = useState("")
   
-  // Estado para quando o usuário quiser sobrescrever manualmente o cálculo automático
   const [cargaHorariaManual, setCargaHorariaManual] = useState<number | null>(null)
 
   const hojeMinimo = new Date().toISOString().slice(0, 16)
 
-  // 1. Carrega os dados do evento ao abrir a página
   useEffect(() => {
     async function carregarDados() {
       try {
@@ -58,7 +55,6 @@ export default function EditarEventoPage({ params }: EditarEventoProps) {
     carregarDados()
   }, [idEvento, router])
 
-  // 2. CÁLCULO EM TEMPO DE RENDERIZAÇÃO (Resolve o erro do ESLint)
   let cargaHorariaCalculada = 1
   if (dataInicio && dataFim) {
     const inicio = new Date(dataInicio)
@@ -70,7 +66,6 @@ export default function EditarEventoPage({ params }: EditarEventoProps) {
     }
   }
 
-  // Define qual valor exibir no input: se o usuário alterou manualmente usa o dele, senão usa o automático
   const cargaHorariaFinal = cargaHorariaManual !== null ? cargaHorariaManual : cargaHorariaCalculada
 
   async function handleSalvar(e: React.FormEvent) {
@@ -163,7 +158,7 @@ export default function EditarEventoPage({ params }: EditarEventoProps) {
                 value={dataInicio}
                 onChange={(e) => {
                   setDataInicio(e.target.value)
-                  setCargaHorariaManual(null) // Reseta o manual para recalcular automático se mudar a data
+                  setCargaHorariaManual(null)
                 }}
                 min={hojeMinimo}
                 required
@@ -178,7 +173,7 @@ export default function EditarEventoPage({ params }: EditarEventoProps) {
                 value={dataFim}
                 onChange={(e) => {
                   setDataFim(e.target.value)
-                  setCargaHorariaManual(null) // Reseta o manual para recalcular automático se mudar a data
+                  setCargaHorariaManual(null)
                 }}
                 min={dataInicio || hojeMinimo}
                 required

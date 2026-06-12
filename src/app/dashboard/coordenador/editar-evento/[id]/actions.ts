@@ -19,7 +19,6 @@ export async function atualizarEventoAction(formData: FormData) {
   const vagasLimite = Number(formData.get("vagas_limite"))
   const cargaHoraria = Number(formData.get("carga_horaria"))
 
-  // --- VALIDAÇÃO SERVER-SIDE ---
   if (!titulo || !descricao || !palestrante || !dataInicioStr || !dataFimStr) {
     throw new Error("Preencha todos os campos obrigatórios.")
   }
@@ -47,7 +46,6 @@ export async function atualizarEventoAction(formData: FormData) {
     throw new Error("A data de término deve ser posterior à data de início.")
   }
 
-  // Verifica se o evento tem inscrições com mais alunos do que as novas vagas
   const inscricoesAtivas = await prisma.inscricoes.count({
     where: { id_evento: idEvento }
   })
@@ -57,7 +55,6 @@ export async function atualizarEventoAction(formData: FormData) {
       `Não é possível reduzir para ${vagasLimite} vagas. Já existem ${inscricoesAtivas} alunos inscritos neste evento.`
     )
   }
-  // --- FIM DA VALIDAÇÃO ---
 
   await prisma.eventos.update({
     where: { id_evento: idEvento },
@@ -76,7 +73,6 @@ export async function atualizarEventoAction(formData: FormData) {
 }
 
 export async function excluirEventoAction(idEvento: number) {
-  // Remove inscrições atreladas primeiro para não violar a foreign key
   await prisma.inscricoes.deleteMany({
     where: { id_evento: idEvento }
   })
