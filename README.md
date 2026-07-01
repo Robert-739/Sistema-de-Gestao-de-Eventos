@@ -1,36 +1,112 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sistema de Gestão de Eventos Acadêmicos
 
-## Getting Started
+> Plataforma fullstack para gestão de eventos acadêmicos com múltiplos perfis de acesso, check-in via QR Code e emissão automática de certificados.
 
-First, run the development server:
+🔗 **Deploy:** [sistema-de-gestao-de-eventos.vercel.app](https://sistema-de-gestao-de-eventos.vercel.app)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+## ✨ Funcionalidades
+
+- **3 perfis de acesso** — Diretor, Coordenador e Aluno, com permissões distintas
+- **Check-in via QR Code** — geração e leitura de QR Code para entrada nos eventos
+- **Check-out registrado** — controle de saída para validação de presença
+- **Certificados automáticos** — geração de certificado digital ao confirmar presença completa
+- **Cadastro de alunos** — sistema de registro e autenticação
+- **Painel administrativo** — gerenciamento de eventos, inscrições e participantes
+
+---
+
+## 🛠️ Stack
+
+| Tecnologia | Uso |
+|---|---|
+| Next.js 14 | Framework principal, SSR e roteamento |
+| React | Componentização da interface |
+| TypeScript | Tipagem estática |
+| Tailwind CSS | Estilização utilitária |
+| Prisma | ORM e modelagem do banco de dados |
+| Supabase | Banco de dados PostgreSQL e storage |
+
+---
+
+## 📁 Estrutura do Projeto
+
+```
+Sistema-de-Gestao-de-Eventos/
+├── app/
+│   ├── api/             # Rotas da API (Next.js API Routes)
+│   ├── cadastro/        # Tela de cadastro de alunos
+│   ├── dashboard/       # Painel administrativo
+│   ├── login/           # Autenticação
+│   ├── layout.tsx       # Layout global e metadata
+│   └── page.tsx         # Página inicial
+├── lib/                 # Configuração do Prisma e Supabase
+├── prisma/
+│   └── schema.prisma    # Modelagem do banco de dados
+└── public/              # Assets estáticos
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🗄️ Modelo de Dados
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```prisma
+// Perfis de acesso
+enum Role {
+  DIRETOR
+  COORDENADOR
+  ALUNO
+}
 
-## Learn More
+// Principais entidades
+- Usuario (id, nome, email, senha, role)
+- Evento (id, titulo, data, local, descricao)
+- Inscricao (id, usuarioId, eventoId, qrCode)
+- Presenca (id, inscricaoId, checkIn, checkOut)
+- Certificado (id, inscricaoId, emitidoEm)
+```
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🚀 Rodando localmente
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+# Clone o repositório
+git clone https://github.com/Robert-739/Sistema-de-Gestao-de-Eventos.git
 
-## Deploy on Vercel
+# Instale as dependências
+npm install
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# Configure as variáveis de ambiente
+cp .env.example .env.local
+# Preencha com suas credenciais do Supabase
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# Execute as migrations do banco
+npx prisma migrate dev
+
+# Rode o servidor de desenvolvimento
+npm run dev
+```
+
+Acesse [http://localhost:3000](http://localhost:3000) no navegador.
+
+---
+
+## 🔐 Variáveis de Ambiente
+
+```env
+DATABASE_URL=
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+```
+
+---
+
+## 📌 Contexto
+
+Projeto desenvolvido como trabalho acadêmico no curso de Tecnólogo em Análise e Desenvolvimento de Sistemas — Faculdades Integradas Einstein de Limeira.
+
+---
+
+Desenvolvido por [Robert Pereira](https://github.com/Robert-739)
